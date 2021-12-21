@@ -40,6 +40,7 @@ public:
 	void deleteVBO()
 	{
 		glDeleteBuffers(1, &ID);
+		ID = 0;
 	}
 
 };

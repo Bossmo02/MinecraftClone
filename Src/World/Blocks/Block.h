@@ -11,6 +11,7 @@ class Block
 public:
 
 	Block(int x, int y, int z, BLOCK_ID id);
+	Block(int x, int y, int z, BLOCK_ID id, unsigned char dir);
 
 	void setFaceVisible(unsigned char dir);
 	void setFaceHidden(unsigned char dir);

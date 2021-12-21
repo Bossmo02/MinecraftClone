@@ -34,6 +34,8 @@ void mouseMovementCallback(GLFWwindow* wnd, double xPos, double yPos);
 
 Camera cam;
 
+World* world;
+
 float sprintSpeedMulti = 20.f;
 float currentSpeedMulti = 1.f;
 
@@ -169,8 +171,8 @@ struct Vertex
 
 int main()
 {
-	int width = 1024;
-	int height = 640;
+	int width = 1000;
+	int height = 800;
 
 	//Initialization
 	glfwInit();
@@ -205,9 +207,8 @@ int main()
 	//-----------------------------------------------------------------------------
 	//Creating Buffers
 
-	World* world;
-	world = new World(2, &cam);
 	
+	world = new World(2, &cam);
 
 
 	//VAO firstVao;
@@ -350,6 +351,9 @@ void handleInput(GLFWwindow* window)
 		currentSpeedMulti = sprintSpeedMulti;
 	else
 		currentSpeedMulti = 1.f;
+
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)
+		world->destroyBlock();
 
 }
 

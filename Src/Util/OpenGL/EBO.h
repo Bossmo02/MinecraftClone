@@ -41,6 +41,7 @@ public:
 	void deleteEBO()
 	{
 		glDeleteBuffers(1, &ID);
+		ID = 0;
 	}
 
 };

@@ -5,9 +5,19 @@ Block::Block(int x, int y, int z, BLOCK_ID id)
 	m_worldPos = glm::ivec3(x, y, z);
 	m_blockID = id;
 
-	// all blocks are visible by default
-	// you need to hide their faces individually
+	// blocks are invisible by default
+	// you need to set up their faces individually
 	m_visibleFaces = 0;
+}
+
+Block::Block(int x, int y, int z, BLOCK_ID id, unsigned char dir)
+{
+	m_worldPos = glm::ivec3(x, y, z);
+	m_blockID = id;
+
+	// blocks are invisible by default
+	// you need to set up their faces individually
+	m_visibleFaces = dir;
 }
 
 

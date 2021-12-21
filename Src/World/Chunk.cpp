@@ -3,6 +3,7 @@
 #include "../Renderer/BasicRenderer.h"
 #include "../Util/Random.h"
 
+#include "../Util/Timer.h"
 
 
 #include "../Util/Timer.h"
@@ -21,154 +22,166 @@ Chunk::Chunk(int x, int z, int* worldSeed, int(*heightFunction)(int x, int z, in
 
 	m_worldSeed = worldSeed;
 
-	// heightMap includes adjacent heights from nearby chunks
-	int heightMap[g_chunkWidthX + 2][g_chunkWidthZ + 2];
 
-	for (int i = m_chunkPos.x; i < xEnd; ++i)
 	{
-		for (int j = m_chunkPos.y; j < zEnd; ++j)
-		{			
-			glm::ivec2 localPos = translateGlobalToLocalCoords(glm::ivec2(i, j));
-			heightMap[localPos.x+1][localPos.y+1] = heightFunction((float)i, (float)j, *m_worldSeed) * 4 + g_baseChunkHeight;
-		}
-	}
+		Timer t;
 
-	//fill the rest of the heightmap with adjacent chunk heights
-	for (int i = -1; i <= int(g_chunkWidthX); ++i)
-	{
-		for (int j = -1; j <= int(g_chunkWidthZ); ++j)
+		// heightMap includes adjacent heights from nearby chunks
+		int heightMap[g_chunkWidthX + 2][g_chunkWidthZ + 2];
+
+		for (int i = m_chunkPos.x; i < xEnd; ++i)
 		{
-			if (i == -1 || j == -1 || i == g_chunkWidthX || j == g_chunkWidthZ)
+			for (int j = m_chunkPos.y; j < zEnd; ++j)
 			{
-				heightMap[i+1][j+1] = heightFunction((float)(m_chunkPos.x + i), (float)(m_chunkPos.y + j), *m_worldSeed) * 4 + g_baseChunkHeight;
+				glm::ivec2 localPos = translateGlobalToLocalCoords(glm::ivec2(i, j), g_chunkWidthX, g_chunkWidthZ);
+				heightMap[localPos.x + 1][localPos.y + 1] = heightFunction((float)i, (float)j, *m_worldSeed) * 4 + g_baseChunkHeight;
+
+				m_solidBlocks[localPos].height = heightMap[localPos.x + 1][localPos.y + 1];
+				m_solidBlocks[localPos].stoneHeight = heightMap[localPos.x + 1][localPos.y + 1] - Random::get().getInt(3, 5);
 			}
 		}
-	}
-	
 
-
-
-	// add all visible blocks to m_*blocks and initialize their faces
-	for (int localX = 0; localX < g_chunkWidthX; ++localX)
-	{
-		for (int localZ = 0; localZ < g_chunkWidthZ; ++localZ)
+		//fill the rest of the heightmap with adjacent chunk heights
+		for (int i = -1; i <= int(g_chunkWidthX); ++i)
 		{
-			glm::ivec2 currPos = { localX, localZ };
-			glm::ivec2 globalPos = translateLocalToGlobalCoords(currPos);
-
-			// add water blocks if height is at a certain threshhold
-			if (heightMap[currPos.x][currPos.y] <= g_baseChunkHeight)
+			for (int j = -1; j <= int(g_chunkWidthZ); ++j)
 			{
-				
-			}
-			
-
-			bool blockAdded = false;
-			for (int i = heightMap[currPos.x+1][currPos.y+1]; i >= 0; --i)
-			{
-				// i is the current y-coordinate
-				// every hightmap index must be increased by 1, because the heightmaps dimensions, relative to the pos, range from -1 to 17
-				blockAdded = false;
-
-				if (i == heightMap[currPos.x+1][currPos.y+1])
+				if (i == -1 || j == -1 || i == g_chunkWidthX || j == g_chunkWidthZ)
 				{
-					m_solidBlocks[currPos].push_back(new Block(globalPos.x, heightMap[currPos.x+1][currPos.y+1], globalPos.y, BLOCK_ID::GRASS));
-					m_solidBlocks[currPos].back()->setFaceVisible(FACES_TO_DISPLAY::TOP);
-					blockAdded = true;
+					heightMap[i + 1][j + 1] = heightFunction((float)(m_chunkPos.x + i), (float)(m_chunkPos.y + j), *m_worldSeed) * 4 + g_baseChunkHeight;
 				}
-				else
+			}
+		}
+
+		// reserve block positions
+		for (auto& e : m_solidBlocks)
+		{
+			e.second.setup();
+		}
+
+
+		// add all visible blocks to m_*blocks and initialize their faces
+		for (int localX = 0; localX < g_chunkWidthX; ++localX)
+		{
+			for (int localZ = 0; localZ < g_chunkWidthZ; ++localZ)
+			{
+				glm::ivec2 currPos = { localX, localZ };
+				glm::ivec2 globalPos = translateLocalToGlobalCoords(currPos, m_chunkPos);
+
+				// add water blocks if height is at a certain threshhold
+				if (heightMap[currPos.x][currPos.y] <= g_baseChunkHeight)
 				{
-					// add other visible blocks in y-column
+
+				}
+
+
+				bool blockAdded = false;
+				for (int i = heightMap[currPos.x + 1][currPos.y + 1]; i >= 0; --i)
+				{
+					// i is the current y-coordinate
+					// every hightmap index must be increased by 1, because the heightmaps dimensions, relative to the pos, range from -1 to 17
+					blockAdded = false;
+
+					if (i == heightMap[currPos.x + 1][currPos.y + 1])
+					{
+						m_solidBlocks[currPos].addBlock(glm::vec3(globalPos.x, heightMap[currPos.x + 1][currPos.y + 1], globalPos.y), FACES_TO_DISPLAY::TOP);
+						blockAdded = true;
+					}
+					else
+					{
+						// add other visible blocks in y-column
+						if (heightMap[currPos.x + 1][currPos.y + DIRECTION_BACK.z + 1] < i)
+						{
+							m_solidBlocks[currPos].addBlock(glm::vec3(globalPos.x, i, globalPos.y), 0);
+							blockAdded = true;
+						}
+						if (heightMap[currPos.x + 1][currPos.y + DIRECTION_FRONT.z + 1] < i)
+						{
+							m_solidBlocks[currPos].addBlock(glm::vec3(globalPos.x, i, globalPos.y), 0);
+							blockAdded = true;
+						}
+						if (heightMap[currPos.x + DIRECTION_LEFT.x + 1][currPos.y + 1] < i)
+						{
+							m_solidBlocks[currPos].addBlock(glm::vec3(globalPos.x, i, globalPos.y), 0);
+							blockAdded = true;
+						}
+						if (heightMap[currPos.x + DIRECTION_RIGHT.x + 1][currPos.y + 1] < i)
+						{
+							m_solidBlocks[currPos].addBlock(glm::vec3(globalPos.x, i, globalPos.y), 0);
+							blockAdded = true;
+						}
+					}
+
+					// when no new block was added -> break loop
+					if (!blockAdded)
+						break;
+
+					// set up faces of newly added block
 					if (heightMap[currPos.x + 1][currPos.y + DIRECTION_BACK.z + 1] < i)
 					{
-						m_solidBlocks[currPos].push_back(new Block(globalPos.x, i, globalPos.y, BLOCK_ID::DIRT));
-						blockAdded = true;
+						m_solidBlocks[currPos].blocks.back()->setFaceVisible(FACES_TO_DISPLAY::BACK);
 					}
 					if (heightMap[currPos.x + 1][currPos.y + DIRECTION_FRONT.z + 1] < i)
 					{
-						m_solidBlocks[currPos].push_back(new Block(globalPos.x, i, globalPos.y, BLOCK_ID::DIRT));
-						blockAdded = true;
+						m_solidBlocks[currPos].blocks.back()->setFaceVisible(FACES_TO_DISPLAY::FRONT);
 					}
 					if (heightMap[currPos.x + DIRECTION_LEFT.x + 1][currPos.y + 1] < i)
 					{
-						m_solidBlocks[currPos].push_back(new Block(globalPos.x, i, globalPos.y, BLOCK_ID::DIRT));
-						blockAdded = true;
+						m_solidBlocks[currPos].blocks.back()->setFaceVisible(FACES_TO_DISPLAY::LEFT);
 					}
 					if (heightMap[currPos.x + DIRECTION_RIGHT.x + 1][currPos.y + 1] < i)
 					{
-						m_solidBlocks[currPos].push_back(new Block(globalPos.x, i, globalPos.y, BLOCK_ID::DIRT));
-						blockAdded = true;
+						m_solidBlocks[currPos].blocks.back()->setFaceVisible(FACES_TO_DISPLAY::RIGHT);
 					}
 				}
 
-				// when no new block was added -> break loop
-				if (!blockAdded)
-					break;
 
-				// set up faces of newly added block
-				if (heightMap[currPos.x + 1][currPos.y + DIRECTION_BACK.z + 1] < i)
-				{
-					m_solidBlocks[currPos].back()->setFaceVisible(FACES_TO_DISPLAY::BACK);
-				}
-				if (heightMap[currPos.x + 1][currPos.y + DIRECTION_FRONT.z + 1] < i)
-				{
-					m_solidBlocks[currPos].back()->setFaceVisible(FACES_TO_DISPLAY::FRONT);
-				}
-				if (heightMap[currPos.x + DIRECTION_LEFT.x + 1][currPos.y + 1] < i)
-				{
-					m_solidBlocks[currPos].back()->setFaceVisible(FACES_TO_DISPLAY::LEFT);
-				}
-				if (heightMap[currPos.x + DIRECTION_RIGHT.x + 1][currPos.y + 1] < i)
-				{
-					m_solidBlocks[currPos].back()->setFaceVisible(FACES_TO_DISPLAY::RIGHT);
-				}
+				//if (!m_solidBlocks[currPos].empty())
+				//{
+				//	int yPos = m_solidBlocks[currPos].back()->getWorldPos().y;
+
+				//	m_solidBlocks[currPos].back()->setFaceVisible(FACES_TO_DISPLAY::TOP);
+
+				//	for (int i = yPos; i >= 0; --i)
+				//	{
+				//		// i is the current y-coordinate
+				//		// every hightmap index must be increased by 1, because the heightmaps dimensions, relative to the pos, range from -1 to 17
+
+				//		if (m_solidBlocks[currPos][i]->getBlockType() != BLOCK_ID::WATER)
+				//		{
+
+				//			if (heightMap[currPos.x + 1][currPos.y + DIRECTION_BACK.z + 1] < i)
+				//			{
+				//				m_solidBlocks[currPos][i]->setFaceVisible(FACES_TO_DISPLAY::BACK);
+				//			}
+				//			if (heightMap[currPos.x + 1][currPos.y + DIRECTION_FRONT.z + 1] < i)
+				//			{
+				//				m_solidBlocks[currPos][i]->setFaceVisible(FACES_TO_DISPLAY::FRONT);
+				//			}
+				//			if (heightMap[currPos.x + DIRECTION_LEFT.x + 1][currPos.y + 1] < i)
+				//			{
+				//				m_solidBlocks[currPos][i]->setFaceVisible(FACES_TO_DISPLAY::LEFT);
+				//			}
+				//			if (heightMap[currPos.x + DIRECTION_RIGHT.x + 1][currPos.y + 1] < i)
+				//			{
+				//				m_solidBlocks[currPos][i]->setFaceVisible(FACES_TO_DISPLAY::RIGHT);
+				//			}
+
+				//			// check for block meshes under water
+				//			if (i < yPos)
+				//			{
+				//				if (m_solidBlocks[currPos][i + 1]->getBlockType() == BLOCK_ID::WATER && m_solidBlocks[currPos][i]->getBlockType() != BLOCK_ID::WATER)
+				//				{
+				//					m_solidBlocks[currPos][i]->setFaceVisible(FACES_TO_DISPLAY::TOP);
+				//				}
+				//			}
+				//		}
+				//	}
+				//}
 			}
-
-
-			//if (!m_solidBlocks[currPos].empty())
-			//{
-			//	int yPos = m_solidBlocks[currPos].back()->getWorldPos().y;
-
-			//	m_solidBlocks[currPos].back()->setFaceVisible(FACES_TO_DISPLAY::TOP);
-
-			//	for (int i = yPos; i >= 0; --i)
-			//	{
-			//		// i is the current y-coordinate
-			//		// every hightmap index must be increased by 1, because the heightmaps dimensions, relative to the pos, range from -1 to 17
-
-			//		if (m_solidBlocks[currPos][i]->getBlockType() != BLOCK_ID::WATER)
-			//		{
-
-			//			if (heightMap[currPos.x + 1][currPos.y + DIRECTION_BACK.z + 1] < i)
-			//			{
-			//				m_solidBlocks[currPos][i]->setFaceVisible(FACES_TO_DISPLAY::BACK);
-			//			}
-			//			if (heightMap[currPos.x + 1][currPos.y + DIRECTION_FRONT.z + 1] < i)
-			//			{
-			//				m_solidBlocks[currPos][i]->setFaceVisible(FACES_TO_DISPLAY::FRONT);
-			//			}
-			//			if (heightMap[currPos.x + DIRECTION_LEFT.x + 1][currPos.y + 1] < i)
-			//			{
-			//				m_solidBlocks[currPos][i]->setFaceVisible(FACES_TO_DISPLAY::LEFT);
-			//			}
-			//			if (heightMap[currPos.x + DIRECTION_RIGHT.x + 1][currPos.y + 1] < i)
-			//			{
-			//				m_solidBlocks[currPos][i]->setFaceVisible(FACES_TO_DISPLAY::RIGHT);
-			//			}
-
-			//			// check for block meshes under water
-			//			if (i < yPos)
-			//			{
-			//				if (m_solidBlocks[currPos][i + 1]->getBlockType() == BLOCK_ID::WATER && m_solidBlocks[currPos][i]->getBlockType() != BLOCK_ID::WATER)
-			//				{
-			//					m_solidBlocks[currPos][i]->setFaceVisible(FACES_TO_DISPLAY::TOP);
-			//				}
-			//			}
-			//		}
-			//	}
-			//}
 		}
-	}
+
+	} //! Timer
 
 	loadMeshToRenderContext();
 	// chunk meshes are send to the GPU in World.cpp
@@ -180,9 +193,9 @@ Chunk::~Chunk()
 
 	for (auto& kV : m_solidBlocks)
 	{
-		for (auto b : kV.second)
+		for (auto& b : kV.second.blocks)
 		{
-			delete b;
+			b.reset();
 		}
 	}
 
@@ -195,9 +208,179 @@ void Chunk::reloadMesh()
 	loadMeshToRenderContext();
 }
 
+void Chunk::resetRenderContext(bool deleteVao)
+{
+	m_renderContext.deleteContextData(deleteVao);
+}
+
 void Chunk::sendRenderContextToGPU()
 {
-	RenderContextBuilder::get().sendDataToGPU(&m_renderContext);
+	sendDataToGPU(&m_renderContext);
+}
+
+// returns chunk positions of adjacent chunks if they got changed in the process of destrying a block
+std::vector<glm::ivec2> Chunk::deleteBlock(glm::ivec3 globalBlockPos, size_t index, std::unordered_map<glm::ivec2, Chunk*, IVec2Hasher>* otherChunks)
+{
+	try
+	{
+		// delete pointer to block
+		glm::ivec2 localXZ = translateGlobalToLocalCoords(glm::ivec2(globalBlockPos.x, globalBlockPos.z), g_chunkWidthX, g_chunkWidthZ);
+		m_solidBlocks[localXZ].blocks[index].reset();
+		m_solidBlocks[localXZ].blocks.erase(m_solidBlocks[localXZ].blocks.begin() + index);
+		
+		std::vector<glm::ivec2> chunksNeedingUpdate = loadSurroundingBlocks(globalBlockPos, otherChunks);
+
+		return chunksNeedingUpdate;
+	}
+	catch (std::exception e)
+	{
+		std::cout << e.what() << "\n";
+		return std::vector<glm::ivec2>();
+	}
+}
+
+std::vector<glm::ivec2> Chunk::loadSurroundingBlocks(glm::vec3 globalCenterPos, std::unordered_map<glm::ivec2, Chunk*, IVec2Hasher>* otherChunks)
+{
+	glm::ivec2 localPos = translateGlobalToLocalCoords(glm::ivec2(globalCenterPos.x, globalCenterPos.z), g_chunkWidthX, g_chunkWidthZ);
+	glm::ivec2 chunkPos = translateGlobalPosToChunkPos(globalCenterPos, (int)(g_chunkWidthX), (int)(g_chunkWidthZ));
+
+	ChunkPiece* left, *right, *back, *front;
+	bool leftInChunk, rightInChunk, backInChunk, frontInChunk;
+	std::vector<glm::ivec2> chunksPositionsUpdated;
+
+	// get adjacent pieces
+	if (localPos.x == 0)
+	{
+		left = otherChunks->at(translateGlobalPosToChunkPos(glm::vec3(globalCenterPos.x - 1, globalCenterPos.y, globalCenterPos.z), (int)(g_chunkWidthX), (int)(g_chunkWidthZ)))->getBlocksFromChunk(glm::ivec2(globalCenterPos.x - 1, globalCenterPos.z));
+		leftInChunk = false;
+	}
+	else
+	{
+		left = &m_solidBlocks[glm::ivec2(localPos.x - 1, localPos.y)];
+		leftInChunk = true;
+	}
+
+	if (localPos.x == g_chunkWidthX - 1)
+	{
+		right = otherChunks->at(translateGlobalPosToChunkPos(glm::vec3(globalCenterPos.x + 1, globalCenterPos.y, globalCenterPos.z), (int)(g_chunkWidthX), (int)(g_chunkWidthZ)))->getBlocksFromChunk(glm::ivec2(globalCenterPos.x + 1, globalCenterPos.z));
+		rightInChunk = false;
+	}
+	else
+	{
+		right = &m_solidBlocks[glm::ivec2(localPos.x + 1, localPos.y)];
+		rightInChunk = true;
+	}
+
+	if (localPos.y == 0)
+	{
+		back = otherChunks->at(translateGlobalPosToChunkPos(glm::vec3(globalCenterPos.x, globalCenterPos.y, globalCenterPos.z - 1), (int)(g_chunkWidthX), (int)(g_chunkWidthZ)))->getBlocksFromChunk(glm::ivec2(globalCenterPos.x, globalCenterPos.z - 1));
+		backInChunk = false;
+	}
+	else
+	{
+		back = &m_solidBlocks[glm::ivec2(localPos.x, localPos.y - 1)];
+		backInChunk = true;
+	}
+
+	if (localPos.y == g_chunkWidthZ - 1)
+	{
+		front = otherChunks->at(translateGlobalPosToChunkPos(glm::vec3(globalCenterPos.x, globalCenterPos.y, globalCenterPos.z + 1), (int)(g_chunkWidthX), (int)(g_chunkWidthZ)))->getBlocksFromChunk(glm::ivec2(globalCenterPos.x, globalCenterPos.z + 1));
+		frontInChunk = false;
+	}
+	else
+	{
+		front = &m_solidBlocks[glm::ivec2(localPos.x, localPos.y + 1)];
+		frontInChunk = true;
+	}
+
+	// update blocks in pieces
+	// bottom
+	if (m_solidBlocks[localPos].blocks.empty())
+	{
+		m_solidBlocks[localPos].addBlock(glm::vec3(globalCenterPos.x, globalCenterPos.y - 1, globalCenterPos.z), FACES_TO_DISPLAY::TOP);
+	}
+	else
+	{
+		int index = m_solidBlocks[localPos].searchForBlock((int)globalCenterPos.y - 1);
+		if (index == -1)
+		{
+			if (globalCenterPos.y >= 0)
+			{
+				m_solidBlocks[localPos].addBlock(glm::vec3(globalCenterPos.x, globalCenterPos.y - 1, globalCenterPos.z), FACES_TO_DISPLAY::TOP);
+
+			}
+		}
+		else
+		{
+			m_solidBlocks[localPos].blocks[index].get()->setFaceVisible(FACES_TO_DISPLAY::TOP);
+		}
+	}
+	// top
+	if (m_solidBlocks[localPos].blocks.empty())
+	{
+		m_solidBlocks[localPos].addBlock(glm::vec3(globalCenterPos.x, globalCenterPos.y + 1, globalCenterPos.z), FACES_TO_DISPLAY::BOTTOM);
+	}
+	else
+	{
+		int index = m_solidBlocks[localPos].searchForBlock((int)globalCenterPos.y + 1);
+		if (index == -1)
+		{
+			m_solidBlocks[localPos].addBlock(glm::vec3(globalCenterPos.x, globalCenterPos.y + 1, globalCenterPos.z), FACES_TO_DISPLAY::BOTTOM);
+		}
+		else
+		{
+			m_solidBlocks[localPos].blocks[index].get()->setFaceVisible(FACES_TO_DISPLAY::BOTTOM);
+		}
+	}
+	
+	// left
+	{
+		glm::ivec2 update = updateNearbyBlock(left, glm::vec3(globalCenterPos.x - 1, globalCenterPos.y, globalCenterPos.z), FACES_TO_DISPLAY::RIGHT);
+		if (update != glm::ivec2(-1, -1) && !leftInChunk)
+			chunksPositionsUpdated.push_back(update);
+	}
+	// right
+	{
+		glm::ivec2 update = updateNearbyBlock(right, glm::vec3(globalCenterPos.x + 1, globalCenterPos.y, globalCenterPos.z), FACES_TO_DISPLAY::LEFT);
+		if (update != glm::ivec2(-1, -1) && !rightInChunk)
+			chunksPositionsUpdated.push_back(update);
+	}
+	// back
+	{
+		glm::ivec2 update = updateNearbyBlock(back, glm::vec3(globalCenterPos.x, globalCenterPos.y, globalCenterPos.z - 1), FACES_TO_DISPLAY::FRONT);
+		if (update != glm::ivec2(-1, -1) && !backInChunk)
+			chunksPositionsUpdated.push_back(update);
+	}
+	// front
+	{
+		glm::ivec2 update = updateNearbyBlock(front, glm::vec3(globalCenterPos.x, globalCenterPos.y, globalCenterPos.z + 1), FACES_TO_DISPLAY::BACK);
+		if (update != glm::ivec2(-1, -1) && !frontInChunk)
+			chunksPositionsUpdated.push_back(update);
+	}
+
+	return chunksPositionsUpdated;
+}
+
+// Returns the chunk position of the updated block
+// Returns (-1, -1) if nothing was changed
+glm::ivec2 Chunk::updateNearbyBlock(ChunkPiece* cPiece, glm::vec3 pos, unsigned char facesToDisplay)
+{
+	int index = cPiece->searchForBlock((int)pos.y);
+	if (index == -1)
+	{
+		if (pos.y < cPiece->height)
+		{
+			cPiece->addBlock(glm::vec3(pos.x, pos.y, pos.z), facesToDisplay);
+			return glm::ivec2(translateGlobalPosToChunkPos(pos, (int)g_chunkWidthX, (int)g_chunkWidthZ));
+		}
+	}
+	else
+	{
+		cPiece->blocks[index].get()->setFaceVisible(facesToDisplay);
+		return glm::ivec2(translateGlobalPosToChunkPos(pos, (int)g_chunkWidthX, (int)g_chunkWidthZ));
+	}
+
+	return glm::ivec2(-1, -1);
 }
 
 void Chunk::renderChunk(glm::mat4& mvp)
@@ -218,25 +401,34 @@ void Chunk::fillSpaceY(int x, int z, int height)
 {
 	int moreDirt = Random::get().getInt(0, 2);
 
-	glm::ivec2 localPos = translateGlobalToLocalCoords(glm::ivec2(x, z));
+	glm::ivec2 localPos = translateGlobalToLocalCoords(glm::ivec2(x, z), g_chunkWidthX, g_chunkWidthZ);
 
-	m_solidBlocks[localPos].reserve(height);
+	m_solidBlocks[localPos].blocks.reserve(height);
 
 	for (int i = 0; i <= height; ++i)
 	{
 		if (i == height)
 		{
-			m_solidBlocks[localPos].push_back(new Block(x, i, z, BLOCK_ID::GRASS));
+			m_solidBlocks[localPos].blocks.push_back(std::make_unique<Block>(Block(x, i, z, BLOCK_ID::GRASS)));
 		}
 		else if (i >= (height - 2 - moreDirt))
 		{
-			m_solidBlocks[localPos].push_back(new Block(x, i, z, BLOCK_ID::DIRT));
+			m_solidBlocks[localPos].blocks.push_back(std::make_unique<Block>(Block(x, i, z, BLOCK_ID::DIRT)));
 		}
 		else
 		{
-			m_solidBlocks[localPos].push_back(new Block(x, i, z, BLOCK_ID::STONE));
+			m_solidBlocks[localPos].blocks.push_back(std::make_unique<Block>(Block(x, i, z, BLOCK_ID::STONE)));
 		}
 	}
+}
+
+ChunkPiece* Chunk::getBlocksFromChunk(glm::ivec2 pos)
+{
+	if (pos.x >= g_chunkWidthX || pos.x < 0 || pos.y >= g_chunkWidthZ || pos.y < 0)
+	{
+		pos = translateGlobalToLocalCoords(pos, g_chunkWidthX, g_chunkWidthZ);
+	}
+	return &m_solidBlocks[pos];
 }
 
 void Chunk::fillSpaceWith(int xStart, int zStart, int xEnd, int zEnd, int height, BLOCK_ID typeID)
@@ -258,7 +450,7 @@ void Chunk::fillSpaceWith(int xStart, int zStart, int xEnd, int zEnd, int height
 	{
 		for (int z = zStart; z < zEnd; ++z)
 		{
-			m_solidBlocks[glm::ivec2(x, z)].push_back(new Block(x, height, z, typeID));
+			m_solidBlocks[glm::ivec2(x, z)].blocks.push_back(std::make_unique<Block>(Block(x, height, z, typeID)));
 		}
 	}
 }
@@ -285,16 +477,6 @@ bool Chunk::posOnChunkEdge(int x, int z) const
 	return false;
 }
 
-glm::ivec2 Chunk::translateGlobalToLocalCoords(glm::ivec2 globalCoords)
-{
-	return { globalCoords.x % g_chunkWidthX, globalCoords.y % g_chunkWidthZ };
-}
-
-glm::ivec2 Chunk::translateLocalToGlobalCoords(glm::ivec2 localCoords)
-{
-	return { m_chunkPos.x + localCoords.x, m_chunkPos.y + localCoords.y };
-}
-
 
 void Chunk::loadMeshToRenderContext()
 {
@@ -303,7 +485,7 @@ void Chunk::loadMeshToRenderContext()
 
 	for (auto& kV : m_solidBlocks)
 	{
-		for (auto b : kV.second)
+		for (auto& b : kV.second.blocks)
 		{
 
 			std::vector<BlockMeshData> blockMeshData = b->getVisibleMesh();
@@ -322,5 +504,5 @@ void Chunk::loadMeshToRenderContext()
 	}
 
 	if(allMeshData.size() > 0 && numOfFacesPerBlock.size() > 0)
-		RenderContextBuilder::get().parseBlockDataToRenderContext(&m_renderContext, allMeshData, numOfFacesPerBlock);
+		parseBlockDataToRenderContext(&m_renderContext, allMeshData, numOfFacesPerBlock);
 }

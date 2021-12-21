@@ -133,6 +133,11 @@ public:
         
     }
 
+    glm::vec3 castRay(float multi) const
+    {
+        return m_camPos + (multi * m_camFront);
+    }
+
 	const glm::mat4 getViewMatrix() const
 	{
 		return glm::lookAt(m_camPos, m_camPos + m_camFront, m_camUp);

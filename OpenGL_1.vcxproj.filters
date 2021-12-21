@@ -45,9 +45,6 @@
     <ClCompile Include="src\World\Chunk.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Renderer\RenderContextBuilder.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
     <ClCompile Include="Src\Renderer\BasicRenderer.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
@@ -840,6 +837,9 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="Src\World\Gen\IVec2Hasher.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Util\HelperFunctions.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

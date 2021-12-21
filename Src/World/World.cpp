@@ -31,10 +31,6 @@ World::World(int seed, Camera* cam)
 
 	m_heightFunction = defaultHeightFunction;
 
-
-	m_chunkFutures.push_back(std::pair<glm::ivec2, std::future<Chunk*>>(glm::ivec2(0, 0), std::async(std::launch::async, loadChunkAsync, 0, 0, &m_seed, m_heightFunction)));
-
-
 	updateChunksAroundCam();
 
 
@@ -63,25 +59,21 @@ void World::updateChunksAroundCam()
 {
 	if (m_chunkFutures.size() < m_maxChunksLoadingCount)
 	{
-		int x = (int)m_cam->getCamPos().x;
-		int z = (int)m_cam->getCamPos().z;
-
-		int currChunkX = (x / (int)g_chunkWidthX);
-		int currChunkZ = (z / (int)g_chunkWidthZ);
+		glm::ivec2 currChunk = translateGlobalPosToChunkIndex(m_cam->getCamPos(), (int)(g_chunkWidthX), (int)(g_chunkWidthZ));
 
 		int timesChunkAdded = 0;
 
-		for (int i = currChunkX - m_loadChunkDistance; i <= currChunkX + m_loadChunkDistance; ++i)
+		for (int i = currChunk.x - m_maxLoadChunkDistance; i <= currChunk.x + m_maxLoadChunkDistance; ++i)
 		{
-			for (int j = currChunkZ - m_loadChunkDistance; j <= currChunkZ + m_loadChunkDistance; ++j)
+			for (int j = currChunk.y - m_maxLoadChunkDistance; j <= currChunk.y + m_maxLoadChunkDistance; ++j)
 			{
 				bool loading = false;
-				glm::ivec2 currPos = { i * int(g_chunkWidthX), j * int(g_chunkWidthZ) };
+				glm::ivec2 currChunk = { i * int(g_chunkWidthX), j * int(g_chunkWidthZ) };
 
 				// check if chunk is loading
 				for (auto& f : m_chunkFutures)
 				{
-					if (f.first == currPos)
+					if (f.first == currChunk)
 					{
 						loading = true;
 						break;
@@ -89,30 +81,35 @@ void World::updateChunksAroundCam()
 				}
 
 				// check if chunk is loaded
-				if (!m_chunks.contains(currPos) && !loading && timesChunkAdded < m_maxChunkAddPerIter)
+				if (!m_chunks.contains(currChunk) && !loading && timesChunkAdded < m_maxChunkAddPerIter)
 				{
-					m_chunkFutures.push_back(std::pair<glm::ivec2, std::future<Chunk*>>(currPos, std::async(std::launch::async, loadChunkAsync, currPos.x, currPos.y, &m_seed, m_heightFunction)));
+					m_chunkFutures.push_back(std::pair<glm::ivec2, std::future<Chunk*>>(currChunk, std::async(std::launch::async, loadChunkAsync, currChunk.x, currChunk.y, &m_seed, m_heightFunction)));
 					timesChunkAdded++;
 				}
 			}
 		}
 
 
-		if (m_oldChunkPos.x != currChunkX && m_oldChunkPos.y != currChunkZ)
+		if (m_oldChunkPos.x != currChunk.x && m_oldChunkPos.y != currChunk.y)
 		{
-			/*for (size_t i = 0; i < m_chunks.size(); ++i)
+			for (auto& c : m_chunks)
 			{
-				float xDiff = std::abs(m_cam->getCamPos().x - m_chunks[i]->getWorldPosXZ().x);
-				float zDiff = std::abs(m_cam->getCamPos().z - m_chunks[i]->getWorldPosXZ().y);
+				float xDiff = std::abs(m_cam->getCamPos().x - c.first.x);
+				float zDiff = std::abs(m_cam->getCamPos().z - c.first.y);
 
-				if (xDiff >= g_chunkWidthX * (m_updateChunkDistance + 1) || zDiff >= g_chunkWidthZ * (m_updateChunkDistance + 1))
+				if (xDiff >= m_distanceToDelete || zDiff >= m_distanceToDelete)
 				{
-					m_chunks.erase(m_chunks.begin() + i);
-				}
-			}*/
+#ifdef _DEBUG
+					std::cout << "Deleted Chunk at: " << c.first.x << ", " << c.first.y << "\n";
+#endif // _DEBUG
 
-			m_oldChunkPos.x = currChunkX;
-			m_oldChunkPos.y = currChunkZ;
+					delete c.second;
+					m_chunks.erase(c.first);
+				}
+			}
+
+			m_oldChunkPos.x = currChunk.x;
+			m_oldChunkPos.y = currChunk.y;
 		}
 
 
@@ -121,7 +118,7 @@ void World::updateChunksAroundCam()
 	updateFutures();
 
 #ifdef _DEBUG
-	std::cout << "m_chunks size: " << m_chunks.size() * sizeof(glm::ivec2) + m_chunks.size() * sizeof(Chunk) << " bytes\n";
+	//std::cout << "m_chunks size: " << m_chunks.size() * sizeof(glm::ivec2) + m_chunks.size() * sizeof(Chunk) << " bytes\n";
 #endif // _DEBUG
 
 }
@@ -154,5 +151,47 @@ void World::draw(glm::mat4& mvp)
 	for (auto& c : m_chunks)
 		c.second->renderChunk(mvp);
 }
+
+
+void World::destroyBlock()
+{
+	for (float i = 0; i < m_maxBlockReach; i += 0.99f)
+	{
+		glm::vec3 pos = m_cam->castRay(i);
+		glm::ivec2 chunkPos = translateGlobalPosToChunkPos(pos, (int)(g_chunkWidthX), (int)(g_chunkWidthZ));
+
+		if (m_chunks.contains(chunkPos))
+		{
+			// needs offset in the negative to work
+			if (pos.x < 0)
+				pos.x--;
+			if (pos.z < 0)
+				pos.z--;
+
+			ChunkPiece* chunkPiece = m_chunks[chunkPos]->getBlocksFromChunk(glm::ivec2(pos.x, pos.z));
+
+			for (size_t j = 0; j < chunkPiece->blocks.size(); ++j)
+			{
+				glm::ivec3 blockPos = chunkPiece->blocks[j]->getWorldPos();
+				if (pos.y > blockPos.y && pos.y < blockPos.y + 1.f)
+				{
+					std::vector<glm::ivec2> chunksToUpdate = m_chunks[chunkPos]->deleteBlock(blockPos, j, &m_chunks);
+					chunksToUpdate.push_back(chunkPos);
+
+					for (auto& c : chunksToUpdate)
+					{
+						m_chunks[c]->resetRenderContext(false);
+						m_chunks[c]->reloadMesh();
+						m_chunks[c]->sendRenderContextToGPU();
+					}
+					return;
+				}
+			}
+		}
+	}
+
+}
+
+
 
 

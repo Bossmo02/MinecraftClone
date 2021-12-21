@@ -157,7 +157,6 @@
     <ClCompile Include="Dependencies\Include\glm\detail\glm.cpp" />
     <ClCompile Include="Dependencies\Include\STB\stb_image_implementation.cpp" />
     <ClCompile Include="Src\Renderer\BasicRenderer.cpp" />
-    <ClCompile Include="Src\Renderer\RenderContextBuilder.cpp" />
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\Util\OpenGL\Texture.cpp" />
@@ -169,6 +168,7 @@
     <ClCompile Include="Src\World\World.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Src\Util\HelperFunctions.h" />
     <ClInclude Include="Src\Util\Timer.h" />
     <ClInclude Include="Src\World\Gen\Noise.h" />
     <ClInclude Include="Src\Renderer\BasicRenderer.h" />
