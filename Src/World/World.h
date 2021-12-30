@@ -35,9 +35,9 @@ private:
 	int(*m_heightFunction)(int x, int z, int seed);
 	FastNoiseLite m_noise;
 	Camera* m_cam;
-	int m_maxLoadChunkDistance = 2;
-	int m_maxChunksLoadingCount = 1000;
-	int m_maxChunkAddPerIter = 2000;
+	int m_maxLoadChunkDistance = 15;
+	int m_maxChunksLoadingCount = 20;
+	int m_maxChunkAddPerIter = 5;
 	int m_distanceToDelete = 30 * g_chunkWidthX;
 
 	// heigher values cause lags. Sending data to the GPU is slow

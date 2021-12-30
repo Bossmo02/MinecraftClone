@@ -9,7 +9,7 @@ BasicRenderer& BasicRenderer::get()
 
 BasicRenderer::BasicRenderer()
 {
-	m_defaultShader.createShader("src/shader/default.vert", "src/shader/default.frag");
+	m_defaultShader.createShader("src/shader/Default.vert", "src/shader/Default.frag");
 }
 
 void BasicRenderer::draw(RenderContext& renderContext, glm::mat4& mvp, bool useDefaultShader)

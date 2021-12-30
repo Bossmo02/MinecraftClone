@@ -4,26 +4,34 @@
 #include "../World/Blocks/BlockMesh.h"
 
 
-//GLenum glCheckError1(const char* file, int line)
-//{
-//    GLenum errorCode;
-//    while ((errorCode = glGetError()) != GL_NO_ERROR)
-//    {
-//        std::string error;
-//        switch (errorCode)
-//        {
-//        case GL_INVALID_ENUM:                  error = "INVALID_ENUM"; break;
-//        case GL_INVALID_VALUE:                 error = "INVALID_VALUE"; break;
-//        case GL_INVALID_OPERATION:             error = "INVALID_OPERATION"; break;
-//        case GL_STACK_OVERFLOW:                error = "STACK_OVERFLOW"; break;
-//        case GL_STACK_UNDERFLOW:               error = "STACK_UNDERFLOW"; break;
-//        case GL_OUT_OF_MEMORY:                 error = "OUT_OF_MEMORY"; break;
-//        case GL_INVALID_FRAMEBUFFER_OPERATION: error = "INVALID_FRAMEBUFFER_OPERATION"; break;
-//        }
-//        std::cout << error << " | " << file << " (" << line << ")" << std::endl;
-//    }
-//    return errorCode;
-//}
+#ifdef _DEBUG
+    #define CHECK_GL_ERROR(file, line) glCheckError(file, line); 
+#else
+    #define CHECK_GL_ERROR(file, line) 
+#endif // !_DEBUG
+
+
+
+GLenum inline glCheckError(const char* file, int line)
+{
+    GLenum errorCode;
+    while ((errorCode = glGetError()) != GL_NO_ERROR)
+    {
+        std::string error;
+        switch (errorCode)
+        {
+        case GL_INVALID_ENUM:                  error = "INVALID_ENUM"; break;
+        case GL_INVALID_VALUE:                 error = "INVALID_VALUE"; break;
+        case GL_INVALID_OPERATION:             error = "INVALID_OPERATION"; break;
+        case GL_STACK_OVERFLOW:                error = "STACK_OVERFLOW"; break;
+        case GL_STACK_UNDERFLOW:               error = "STACK_UNDERFLOW"; break;
+        case GL_OUT_OF_MEMORY:                 error = "OUT_OF_MEMORY"; break;
+        case GL_INVALID_FRAMEBUFFER_OPERATION: error = "INVALID_FRAMEBUFFER_OPERATION"; break;
+        }
+        std::cout << error << " | " << file << " (" << line << ")" << std::endl;
+    }
+    return errorCode;
+}
 
 
 void inline parseBlockDataToRenderContext(RenderContext* con, std::vector<BlockMeshData> blockData, std::vector<int> numOfFacesForBlocks)
@@ -72,35 +80,34 @@ void inline parseBlockDataToRenderContext(RenderContext* con, std::vector<BlockM
 
 void inline sendDataToGPU(RenderContext* con)
 {
-    {
-        Timer t;
-        //glCheckError1(__FILE__, __LINE__);
+    CHECK_GL_ERROR(__FILE__, __LINE__);
 
-        con->vertexArray.bindVAO();
+    con->vertexArray.bindVAO();
 
-        //glCheckError1(__FILE__, __LINE__);
+    CHECK_GL_ERROR(__FILE__, __LINE__);
 
-        con->vertexData.sendData(con->vec_vertexData.data(), sizeof(GLfloat) * con->vec_vertexData.size(), GL_STATIC_DRAW);
-        con->textureData.sendData(con->vec_texCoordData.data(), sizeof(GLfloat) * con->vec_texCoordData.size(), GL_STATIC_DRAW);
-        con->lightLevelData.sendData(con->vec_lighlevelData.data(), sizeof(GLfloat) * con->vec_lighlevelData.size(), GL_STATIC_DRAW);
+    con->vertexData.sendData(con->vec_vertexData.data(), sizeof(GLfloat) * con->vec_vertexData.size(), GL_STATIC_DRAW);
+    con->textureData.sendData(con->vec_texCoordData.data(), sizeof(GLfloat) * con->vec_texCoordData.size(), GL_STATIC_DRAW);
+    con->lightLevelData.sendData(con->vec_lighlevelData.data(), sizeof(GLfloat) * con->vec_lighlevelData.size(), GL_STATIC_DRAW);
 
-        //glCheckError1(__FILE__, __LINE__);
+    CHECK_GL_ERROR(__FILE__, __LINE__);
 
-        con->vertexArray.linkVBO(con->vertexData, 0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
-        con->vertexArray.linkVBO(con->textureData, 1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (void*)0);
-        con->vertexArray.linkVBO(con->lightLevelData, 2, 1, GL_FLOAT, GL_FALSE, 1 * sizeof(GLfloat), (void*)0);
+    con->vertexArray.linkVBO(con->vertexData, 0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
+    con->vertexArray.linkVBO(con->textureData, 1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (void*)0);
+    con->vertexArray.linkVBO(con->lightLevelData, 2, 1, GL_FLOAT, GL_FALSE, 1 * sizeof(GLfloat), (void*)0);
 
-        //glCheckError1(__FILE__, __LINE__);
+    CHECK_GL_ERROR(__FILE__, __LINE__);
 
-        con->indicesData.sendData(con->vec_indicesData.data(), sizeof(GLuint) * con->vec_indicesData.size(), GL_STATIC_DRAW);
+    con->indicesData.sendData(con->vec_indicesData.data(), sizeof(GLuint) * con->vec_indicesData.size(), GL_STATIC_DRAW);
 
-        //glCheckError1(__FILE__, __LINE__);
+    CHECK_GL_ERROR(__FILE__, __LINE__);
 
-        con->vertexArray.unbindVAO();
-        //glCheckError1(__FILE__, __LINE__);
+    con->vertexArray.unbindVAO();
 
-        con->deleteContextData(false);
-    }
+    CHECK_GL_ERROR(__FILE__, __LINE__);
+
+    con->deleteContextData(false);
+    
 }
 
 

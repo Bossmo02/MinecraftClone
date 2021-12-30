@@ -20,10 +20,14 @@ public:
 	bool isFaceVisible(unsigned char dir) const;
 	const BLOCK_ID getBlockType();
 
-	std::vector<BlockMeshData> getVisibleMesh();
+	std::vector<BlockMeshData> getVisibleMesh(float scale = 1);
+
+
+
 
 private:
 
+	void setVerticesToWorldPosScaled(float scale, std::vector<GLfloat>& verts);
 	void setVerticesToWorldPos(std::vector<GLfloat>& verts);
 
 	glm::ivec3 m_worldPos;

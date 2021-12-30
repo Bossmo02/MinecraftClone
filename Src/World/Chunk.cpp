@@ -23,165 +23,117 @@ Chunk::Chunk(int x, int z, int* worldSeed, int(*heightFunction)(int x, int z, in
 	m_worldSeed = worldSeed;
 
 
+	
+	// heightMap includes adjacent heights from nearby chunks
+	int heightMap[g_chunkWidthX + 2][g_chunkWidthZ + 2];
+
+	for (int i = m_chunkPos.x; i < xEnd; ++i)
 	{
-		Timer t;
-
-		// heightMap includes adjacent heights from nearby chunks
-		int heightMap[g_chunkWidthX + 2][g_chunkWidthZ + 2];
-
-		for (int i = m_chunkPos.x; i < xEnd; ++i)
+		for (int j = m_chunkPos.y; j < zEnd; ++j)
 		{
-			for (int j = m_chunkPos.y; j < zEnd; ++j)
-			{
-				glm::ivec2 localPos = translateGlobalToLocalCoords(glm::ivec2(i, j), g_chunkWidthX, g_chunkWidthZ);
-				heightMap[localPos.x + 1][localPos.y + 1] = heightFunction((float)i, (float)j, *m_worldSeed) * 4 + g_baseChunkHeight;
+			glm::ivec2 localPos = translateGlobalToLocalCoords(glm::ivec2(i, j), g_chunkWidthX, g_chunkWidthZ);
+			heightMap[localPos.x + 1][localPos.y + 1] = heightFunction((float)i, (float)j, *m_worldSeed);
 
-				m_solidBlocks[localPos].height = heightMap[localPos.x + 1][localPos.y + 1];
-				m_solidBlocks[localPos].stoneHeight = heightMap[localPos.x + 1][localPos.y + 1] - Random::get().getInt(3, 5);
+			m_solidBlocks[localPos].height = heightMap[localPos.x + 1][localPos.y + 1];
+			m_solidBlocks[localPos].stoneHeight = heightMap[localPos.x + 1][localPos.y + 1] - Random::get().getInt(3, 5);
+		}
+	}
+
+	//fill the rest of the heightmap with adjacent chunk heights
+	for (int i = -1; i <= int(g_chunkWidthX); ++i)
+	{
+		for (int j = -1; j <= int(g_chunkWidthZ); ++j)
+		{
+			if (i == -1 || j == -1 || i == g_chunkWidthX || j == g_chunkWidthZ)
+			{
+				heightMap[i + 1][j + 1] = heightFunction((float)(m_chunkPos.x + i), (float)(m_chunkPos.y + j), *m_worldSeed);
 			}
 		}
+	}
 
-		//fill the rest of the heightmap with adjacent chunk heights
-		for (int i = -1; i <= int(g_chunkWidthX); ++i)
+	// reserve block positions
+	for (auto& e : m_solidBlocks)
+	{
+		e.second.setup();
+	}
+
+
+	// add all visible blocks to m_*blocks and initialize their faces
+	for (int localX = 0; localX < g_chunkWidthX; ++localX)
+	{
+		for (int localZ = 0; localZ < g_chunkWidthZ; ++localZ)
 		{
-			for (int j = -1; j <= int(g_chunkWidthZ); ++j)
+			glm::ivec2 currPos = { localX, localZ };
+			glm::ivec2 globalPos = translateLocalToGlobalCoords(currPos, m_chunkPos);
+
+			// add water blocks if height is at a certain threshhold
+			if (heightMap[currPos.x][currPos.y] <= g_baseChunkHeight)
 			{
-				if (i == -1 || j == -1 || i == g_chunkWidthX || j == g_chunkWidthZ)
-				{
-					heightMap[i + 1][j + 1] = heightFunction((float)(m_chunkPos.x + i), (float)(m_chunkPos.y + j), *m_worldSeed) * 4 + g_baseChunkHeight;
-				}
+
 			}
-		}
-
-		// reserve block positions
-		for (auto& e : m_solidBlocks)
-		{
-			e.second.setup();
-		}
 
 
-		// add all visible blocks to m_*blocks and initialize their faces
-		for (int localX = 0; localX < g_chunkWidthX; ++localX)
-		{
-			for (int localZ = 0; localZ < g_chunkWidthZ; ++localZ)
+			bool blockAdded = false;
+			for (int i = heightMap[currPos.x + 1][currPos.y + 1]; i >= 0; --i)
 			{
-				glm::ivec2 currPos = { localX, localZ };
-				glm::ivec2 globalPos = translateLocalToGlobalCoords(currPos, m_chunkPos);
+				// i is the current y-coordinate
+				// every hightmap index must be increased by 1, because the heightmaps dimensions, relative to the pos, range from -1 to 17
+				blockAdded = false;
 
-				// add water blocks if height is at a certain threshhold
-				if (heightMap[currPos.x][currPos.y] <= g_baseChunkHeight)
+				if (i == heightMap[currPos.x + 1][currPos.y + 1])
 				{
-
+					m_solidBlocks[currPos].addBlock(glm::vec3(globalPos.x, heightMap[currPos.x + 1][currPos.y + 1], globalPos.y), FACES_TO_DISPLAY::TOP);
+					blockAdded = true;
 				}
-
-
-				bool blockAdded = false;
-				for (int i = heightMap[currPos.x + 1][currPos.y + 1]; i >= 0; --i)
+				else
 				{
-					// i is the current y-coordinate
-					// every hightmap index must be increased by 1, because the heightmaps dimensions, relative to the pos, range from -1 to 17
-					blockAdded = false;
-
-					if (i == heightMap[currPos.x + 1][currPos.y + 1])
-					{
-						m_solidBlocks[currPos].addBlock(glm::vec3(globalPos.x, heightMap[currPos.x + 1][currPos.y + 1], globalPos.y), FACES_TO_DISPLAY::TOP);
-						blockAdded = true;
-					}
-					else
-					{
-						// add other visible blocks in y-column
-						if (heightMap[currPos.x + 1][currPos.y + DIRECTION_BACK.z + 1] < i)
-						{
-							m_solidBlocks[currPos].addBlock(glm::vec3(globalPos.x, i, globalPos.y), 0);
-							blockAdded = true;
-						}
-						if (heightMap[currPos.x + 1][currPos.y + DIRECTION_FRONT.z + 1] < i)
-						{
-							m_solidBlocks[currPos].addBlock(glm::vec3(globalPos.x, i, globalPos.y), 0);
-							blockAdded = true;
-						}
-						if (heightMap[currPos.x + DIRECTION_LEFT.x + 1][currPos.y + 1] < i)
-						{
-							m_solidBlocks[currPos].addBlock(glm::vec3(globalPos.x, i, globalPos.y), 0);
-							blockAdded = true;
-						}
-						if (heightMap[currPos.x + DIRECTION_RIGHT.x + 1][currPos.y + 1] < i)
-						{
-							m_solidBlocks[currPos].addBlock(glm::vec3(globalPos.x, i, globalPos.y), 0);
-							blockAdded = true;
-						}
-					}
-
-					// when no new block was added -> break loop
-					if (!blockAdded)
-						break;
-
-					// set up faces of newly added block
+					// add other visible blocks in y-column
 					if (heightMap[currPos.x + 1][currPos.y + DIRECTION_BACK.z + 1] < i)
 					{
-						m_solidBlocks[currPos].blocks.back()->setFaceVisible(FACES_TO_DISPLAY::BACK);
+						m_solidBlocks[currPos].addBlock(glm::vec3(globalPos.x, i, globalPos.y), 0);
+						blockAdded = true;
 					}
 					if (heightMap[currPos.x + 1][currPos.y + DIRECTION_FRONT.z + 1] < i)
 					{
-						m_solidBlocks[currPos].blocks.back()->setFaceVisible(FACES_TO_DISPLAY::FRONT);
+						m_solidBlocks[currPos].addBlock(glm::vec3(globalPos.x, i, globalPos.y), 0);
+						blockAdded = true;
 					}
 					if (heightMap[currPos.x + DIRECTION_LEFT.x + 1][currPos.y + 1] < i)
 					{
-						m_solidBlocks[currPos].blocks.back()->setFaceVisible(FACES_TO_DISPLAY::LEFT);
+						m_solidBlocks[currPos].addBlock(glm::vec3(globalPos.x, i, globalPos.y), 0);
+						blockAdded = true;
 					}
 					if (heightMap[currPos.x + DIRECTION_RIGHT.x + 1][currPos.y + 1] < i)
 					{
-						m_solidBlocks[currPos].blocks.back()->setFaceVisible(FACES_TO_DISPLAY::RIGHT);
+						m_solidBlocks[currPos].addBlock(glm::vec3(globalPos.x, i, globalPos.y), 0);
+						blockAdded = true;
 					}
 				}
 
+				// when no new block was added -> break loop
+				if (!blockAdded)
+					break;
 
-				//if (!m_solidBlocks[currPos].empty())
-				//{
-				//	int yPos = m_solidBlocks[currPos].back()->getWorldPos().y;
-
-				//	m_solidBlocks[currPos].back()->setFaceVisible(FACES_TO_DISPLAY::TOP);
-
-				//	for (int i = yPos; i >= 0; --i)
-				//	{
-				//		// i is the current y-coordinate
-				//		// every hightmap index must be increased by 1, because the heightmaps dimensions, relative to the pos, range from -1 to 17
-
-				//		if (m_solidBlocks[currPos][i]->getBlockType() != BLOCK_ID::WATER)
-				//		{
-
-				//			if (heightMap[currPos.x + 1][currPos.y + DIRECTION_BACK.z + 1] < i)
-				//			{
-				//				m_solidBlocks[currPos][i]->setFaceVisible(FACES_TO_DISPLAY::BACK);
-				//			}
-				//			if (heightMap[currPos.x + 1][currPos.y + DIRECTION_FRONT.z + 1] < i)
-				//			{
-				//				m_solidBlocks[currPos][i]->setFaceVisible(FACES_TO_DISPLAY::FRONT);
-				//			}
-				//			if (heightMap[currPos.x + DIRECTION_LEFT.x + 1][currPos.y + 1] < i)
-				//			{
-				//				m_solidBlocks[currPos][i]->setFaceVisible(FACES_TO_DISPLAY::LEFT);
-				//			}
-				//			if (heightMap[currPos.x + DIRECTION_RIGHT.x + 1][currPos.y + 1] < i)
-				//			{
-				//				m_solidBlocks[currPos][i]->setFaceVisible(FACES_TO_DISPLAY::RIGHT);
-				//			}
-
-				//			// check for block meshes under water
-				//			if (i < yPos)
-				//			{
-				//				if (m_solidBlocks[currPos][i + 1]->getBlockType() == BLOCK_ID::WATER && m_solidBlocks[currPos][i]->getBlockType() != BLOCK_ID::WATER)
-				//				{
-				//					m_solidBlocks[currPos][i]->setFaceVisible(FACES_TO_DISPLAY::TOP);
-				//				}
-				//			}
-				//		}
-				//	}
-				//}
+				// set up faces of newly added block
+				if (heightMap[currPos.x + 1][currPos.y + DIRECTION_BACK.z + 1] < i)
+				{
+					m_solidBlocks[currPos].blocks.back()->setFaceVisible(FACES_TO_DISPLAY::BACK);
+				}
+				if (heightMap[currPos.x + 1][currPos.y + DIRECTION_FRONT.z + 1] < i)
+				{
+					m_solidBlocks[currPos].blocks.back()->setFaceVisible(FACES_TO_DISPLAY::FRONT);
+				}
+				if (heightMap[currPos.x + DIRECTION_LEFT.x + 1][currPos.y + 1] < i)
+				{
+					m_solidBlocks[currPos].blocks.back()->setFaceVisible(FACES_TO_DISPLAY::LEFT);
+				}
+				if (heightMap[currPos.x + DIRECTION_RIGHT.x + 1][currPos.y + 1] < i)
+				{
+					m_solidBlocks[currPos].blocks.back()->setFaceVisible(FACES_TO_DISPLAY::RIGHT);
+				}
 			}
 		}
-
-	} //! Timer
+	}
 
 	loadMeshToRenderContext();
 	// chunk meshes are send to the GPU in World.cpp
@@ -219,7 +171,7 @@ void Chunk::sendRenderContextToGPU()
 }
 
 // returns chunk positions of adjacent chunks if they got changed in the process of destrying a block
-std::vector<glm::ivec2> Chunk::deleteBlock(glm::ivec3 globalBlockPos, size_t index, std::unordered_map<glm::ivec2, Chunk*, IVec2Hasher>* otherChunks)
+std::vector<glm::ivec2> Chunk::deleteBlock(glm::ivec3 globalBlockPos, size_t index, std::vector<Chunk*>* adjacentChunks)
 {
 	try
 	{
@@ -228,7 +180,7 @@ std::vector<glm::ivec2> Chunk::deleteBlock(glm::ivec3 globalBlockPos, size_t ind
 		m_solidBlocks[localXZ].blocks[index].reset();
 		m_solidBlocks[localXZ].blocks.erase(m_solidBlocks[localXZ].blocks.begin() + index);
 		
-		std::vector<glm::ivec2> chunksNeedingUpdate = loadSurroundingBlocks(globalBlockPos, otherChunks);
+		std::vector<glm::ivec2> chunksNeedingUpdate = loadSurroundingBlocks(globalBlockPos, adjacentChunks);
 
 		return chunksNeedingUpdate;
 	}
@@ -239,7 +191,7 @@ std::vector<glm::ivec2> Chunk::deleteBlock(glm::ivec3 globalBlockPos, size_t ind
 	}
 }
 
-std::vector<glm::ivec2> Chunk::loadSurroundingBlocks(glm::vec3 globalCenterPos, std::unordered_map<glm::ivec2, Chunk*, IVec2Hasher>* otherChunks)
+std::vector<glm::ivec2> Chunk::loadSurroundingBlocks(glm::vec3 globalCenterPos, std::vector<Chunk*>* adjacentChunks)
 {
 	glm::ivec2 localPos = translateGlobalToLocalCoords(glm::ivec2(globalCenterPos.x, globalCenterPos.z), g_chunkWidthX, g_chunkWidthZ);
 	glm::ivec2 chunkPos = translateGlobalPosToChunkPos(globalCenterPos, (int)(g_chunkWidthX), (int)(g_chunkWidthZ));
@@ -251,7 +203,7 @@ std::vector<glm::ivec2> Chunk::loadSurroundingBlocks(glm::vec3 globalCenterPos, 
 	// get adjacent pieces
 	if (localPos.x == 0)
 	{
-		left = otherChunks->at(translateGlobalPosToChunkPos(glm::vec3(globalCenterPos.x - 1, globalCenterPos.y, globalCenterPos.z), (int)(g_chunkWidthX), (int)(g_chunkWidthZ)))->getBlocksFromChunk(glm::ivec2(globalCenterPos.x - 1, globalCenterPos.z));
+		left = adjacentChunks->at(0)->getBlocksFromChunk(glm::ivec2(globalCenterPos.x - 1, globalCenterPos.z));
 		leftInChunk = false;
 	}
 	else
@@ -262,7 +214,7 @@ std::vector<glm::ivec2> Chunk::loadSurroundingBlocks(glm::vec3 globalCenterPos, 
 
 	if (localPos.x == g_chunkWidthX - 1)
 	{
-		right = otherChunks->at(translateGlobalPosToChunkPos(glm::vec3(globalCenterPos.x + 1, globalCenterPos.y, globalCenterPos.z), (int)(g_chunkWidthX), (int)(g_chunkWidthZ)))->getBlocksFromChunk(glm::ivec2(globalCenterPos.x + 1, globalCenterPos.z));
+		right = adjacentChunks->at(1)->getBlocksFromChunk(glm::ivec2(globalCenterPos.x + 1, globalCenterPos.z));
 		rightInChunk = false;
 	}
 	else
@@ -273,7 +225,7 @@ std::vector<glm::ivec2> Chunk::loadSurroundingBlocks(glm::vec3 globalCenterPos, 
 
 	if (localPos.y == 0)
 	{
-		back = otherChunks->at(translateGlobalPosToChunkPos(glm::vec3(globalCenterPos.x, globalCenterPos.y, globalCenterPos.z - 1), (int)(g_chunkWidthX), (int)(g_chunkWidthZ)))->getBlocksFromChunk(glm::ivec2(globalCenterPos.x, globalCenterPos.z - 1));
+		back = adjacentChunks->at(2)->getBlocksFromChunk(glm::ivec2(globalCenterPos.x, globalCenterPos.z - 1));
 		backInChunk = false;
 	}
 	else
@@ -284,7 +236,7 @@ std::vector<glm::ivec2> Chunk::loadSurroundingBlocks(glm::vec3 globalCenterPos, 
 
 	if (localPos.y == g_chunkWidthZ - 1)
 	{
-		front = otherChunks->at(translateGlobalPosToChunkPos(glm::vec3(globalCenterPos.x, globalCenterPos.y, globalCenterPos.z + 1), (int)(g_chunkWidthX), (int)(g_chunkWidthZ)))->getBlocksFromChunk(glm::ivec2(globalCenterPos.x, globalCenterPos.z + 1));
+		front = adjacentChunks->at(3)->getBlocksFromChunk(glm::ivec2(globalCenterPos.x, globalCenterPos.z + 1));
 		frontInChunk = false;
 	}
 	else
@@ -307,7 +259,6 @@ std::vector<glm::ivec2> Chunk::loadSurroundingBlocks(glm::vec3 globalCenterPos, 
 			if (globalCenterPos.y >= 0)
 			{
 				m_solidBlocks[localPos].addBlock(glm::vec3(globalCenterPos.x, globalCenterPos.y - 1, globalCenterPos.z), FACES_TO_DISPLAY::TOP);
-
 			}
 		}
 		else
@@ -336,26 +287,26 @@ std::vector<glm::ivec2> Chunk::loadSurroundingBlocks(glm::vec3 globalCenterPos, 
 	// left
 	{
 		glm::ivec2 update = updateNearbyBlock(left, glm::vec3(globalCenterPos.x - 1, globalCenterPos.y, globalCenterPos.z), FACES_TO_DISPLAY::RIGHT);
-		if (update != glm::ivec2(-1, -1) && !leftInChunk)
-			chunksPositionsUpdated.push_back(update);
+		if (!leftInChunk)
+			chunksPositionsUpdated.push_back(adjacentChunks->at(0)->getWorldPosXZ());
 	}
 	// right
 	{
 		glm::ivec2 update = updateNearbyBlock(right, glm::vec3(globalCenterPos.x + 1, globalCenterPos.y, globalCenterPos.z), FACES_TO_DISPLAY::LEFT);
-		if (update != glm::ivec2(-1, -1) && !rightInChunk)
-			chunksPositionsUpdated.push_back(update);
+		if (!rightInChunk)
+			chunksPositionsUpdated.push_back(adjacentChunks->at(1)->getWorldPosXZ());
 	}
 	// back
 	{
 		glm::ivec2 update = updateNearbyBlock(back, glm::vec3(globalCenterPos.x, globalCenterPos.y, globalCenterPos.z - 1), FACES_TO_DISPLAY::FRONT);
-		if (update != glm::ivec2(-1, -1) && !backInChunk)
-			chunksPositionsUpdated.push_back(update);
+		if (!backInChunk)
+			chunksPositionsUpdated.push_back(adjacentChunks->at(2)->getWorldPosXZ());
 	}
 	// front
 	{
 		glm::ivec2 update = updateNearbyBlock(front, glm::vec3(globalCenterPos.x, globalCenterPos.y, globalCenterPos.z + 1), FACES_TO_DISPLAY::BACK);
-		if (update != glm::ivec2(-1, -1) && !frontInChunk)
-			chunksPositionsUpdated.push_back(update);
+		if (!frontInChunk)
+			chunksPositionsUpdated.push_back(adjacentChunks->at(3)->getWorldPosXZ());
 	}
 
 	return chunksPositionsUpdated;

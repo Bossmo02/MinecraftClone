@@ -51,6 +51,9 @@
     <ClCompile Include="Src\World\World.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="Src\World\Blocks\DebugBlock.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dependencies\Include\STB\stb_image.h">
@@ -842,6 +845,9 @@
     <ClInclude Include="Src\Util\HelperFunctions.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="Src\World\Blocks\DebugBlock.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Dependencies\Include\glm\detail\func_common.inl">
@@ -1240,7 +1246,9 @@
     <None Include="Dependencies\Include\glm\gtx\wrap.inl">
       <Filter>Headerdateien</Filter>
     </None>
-    <None Include="src\shader\default.frag" />
-    <None Include="src\shader\default.vert" />
+    <None Include="src\shader\Default.frag" />
+    <None Include="src\shader\Default.vert" />
+    <None Include="Src\Shader\Debug.vert" />
+    <None Include="Src\Shader\Debug.frag" />
   </ItemGroup>
 </Project>

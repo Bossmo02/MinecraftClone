@@ -145,8 +145,8 @@ std::vector<GLfloat> g_verticesTop =
 
 
 GLfloat g_lightLevelTop		= 0.9f;
-GLfloat g_lightLevelSide	= 0.7f;
-GLfloat g_lightLevelBottom	= 0.3f;
+GLfloat g_lightLevelSide	= 0.6f;
+GLfloat g_lightLevelBottom	= 0.4f;
 
 
 
@@ -238,6 +238,20 @@ BlockMeshData getBlockTopMeshData(int indicesIndex)
 	data.lightLevel = g_lightLevelTop;
 
 	return data;
+}
+
+std::vector<BlockMeshData> getAllBlockData(int indicesIndex)
+{
+	std::vector<BlockMeshData> allData;
+
+	allData.push_back(getBlockBackMeshData(indicesIndex));
+	allData.push_back(getBlockFrontMeshData(indicesIndex));
+	allData.push_back(getBlockLeftMeshData(indicesIndex));
+	allData.push_back(getBlockRightMeshData(indicesIndex));
+	allData.push_back(getBlockBottomMeshData(indicesIndex));
+	allData.push_back(getBlockTopMeshData(indicesIndex));
+
+	return allData;
 }
 
 

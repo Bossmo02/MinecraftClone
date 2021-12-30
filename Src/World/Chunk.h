@@ -85,7 +85,7 @@ public:
 	void reloadMesh();
     void resetRenderContext(bool deleteVao);
     void sendRenderContextToGPU();
-    std::vector<glm::ivec2> deleteBlock(glm::ivec3 globalBlockPos, size_t index, std::unordered_map<glm::ivec2, Chunk*, IVec2Hasher>* otherChunks);
+    std::vector<glm::ivec2> deleteBlock(glm::ivec3 globalBlockPos, size_t index, std::vector<Chunk*>* adjacentChunks);
 
 	void renderChunk(glm::mat4& mvp);
 
@@ -110,7 +110,7 @@ private:
     bool posInChunk(int x, int z) const;
     bool posOnChunkEdge(int x, int z) const;
 
-    std::vector<glm::ivec2> loadSurroundingBlocks(glm::vec3 globalCenterPos, std::unordered_map<glm::ivec2, Chunk*, IVec2Hasher>* otherChunks);
+    std::vector<glm::ivec2> loadSurroundingBlocks(glm::vec3 globalCenterPos, std::vector<Chunk*>* adjacentChunks);
     glm::ivec2 updateNearbyBlock(ChunkPiece* cPiece, glm::vec3 pos, unsigned char facesToDisplay);
 	void loadMeshToRenderContext();
 

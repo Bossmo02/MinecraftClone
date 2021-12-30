@@ -16,9 +16,26 @@ Chunk* loadChunkAsync(int x, int z, int* seed, int(*heightFunction)(int x, int z
 
 int defaultHeightFunction(int x, int z, int seed)
 {
-	FastNoiseLite n;
-	n.SetSeed(seed);
-	return (n.GetNoise((float)x, (float)z) * 4) + g_baseChunkHeight;
+	FastNoiseLite n1, n2;
+	n1.SetSeed(seed);
+	n2.SetSeed(seed + 1);
+
+	float n2Multi = 60.4f;
+	float mountainWidth = 0.2f;		// lower values -> wider mountains
+	float mountainHeight = 10.f;	// higher values -> higher mountain tops
+
+	n1.SetFrequency(0.005f);
+	n1.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
+	n1.SetFractalLacunarity(mountainWidth);
+	n1.SetFractalWeightedStrength(mountainHeight);
+
+
+	float temp1 = ((n1.GetNoise((float)x, (float)z, n2.GetNoise((float)x, (float)z) * n2Multi)) + 1);
+	float temp2 = 0;
+
+	temp2 = temp1 * 20;
+	
+	return (int)(temp2 + g_baseChunkHeight);
 }
 
 
@@ -116,11 +133,6 @@ void World::updateChunksAroundCam()
 	}
 	
 	updateFutures();
-
-#ifdef _DEBUG
-	//std::cout << "m_chunks size: " << m_chunks.size() * sizeof(glm::ivec2) + m_chunks.size() * sizeof(Chunk) << " bytes\n";
-#endif // _DEBUG
-
 }
 
 void World::updateFutures()
@@ -175,7 +187,14 @@ void World::destroyBlock()
 				glm::ivec3 blockPos = chunkPiece->blocks[j]->getWorldPos();
 				if (pos.y > blockPos.y && pos.y < blockPos.y + 1.f)
 				{
-					std::vector<glm::ivec2> chunksToUpdate = m_chunks[chunkPos]->deleteBlock(blockPos, j, &m_chunks);
+					// gather adjacent chunks
+					std::vector<Chunk*> adjacentChunks;
+					adjacentChunks.push_back(m_chunks[glm::ivec2(chunkPos.x - 32, chunkPos.y)]);
+					adjacentChunks.push_back(m_chunks[glm::ivec2(chunkPos.x + 32, chunkPos.y)]);
+					adjacentChunks.push_back(m_chunks[glm::ivec2(chunkPos.x, chunkPos.y - 32)]);
+					adjacentChunks.push_back(m_chunks[glm::ivec2(chunkPos.x, chunkPos.y + 32)]);
+
+					std::vector<glm::ivec2> chunksToUpdate = m_chunks[chunkPos]->deleteBlock(blockPos, j, &adjacentChunks);
 					chunksToUpdate.push_back(chunkPos);
 
 					for (auto& c : chunksToUpdate)

@@ -31,5 +31,7 @@ BlockMeshData getBlockBottomMeshData(int indicesIndex);
 BlockMeshData getBlockTopMeshData(int indicesIndex);
 
 
+std::vector<BlockMeshData> getAllBlockData(int indicesIndex);
+
 
 #endif // !BLOCK_MESH_HPP
