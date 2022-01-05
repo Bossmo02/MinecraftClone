@@ -3,7 +3,6 @@
 
 //---------------
 // Functions used for multithreading
-static std::mutex g_m;
 
 Chunk* loadChunkAsync(int x, int z, int* seed, int(*heightFunction)(int x, int z, int seed))
 {
@@ -30,12 +29,12 @@ int defaultHeightFunction(int x, int z, int seed)
 	n1.SetFractalWeightedStrength(mountainHeight);
 
 
-	float temp1 = ((n1.GetNoise((float)x, (float)z, n2.GetNoise((float)x, (float)z) * n2Multi)) + 1);
+	float temp1 = ((n1.GetNoise((float)x, (float)z, n2.GetNoise((float)x, (float)z) * n2Multi)) + 2.f);
 	float temp2 = 0;
 
 	temp2 = temp1 * 20;
 	
-	return (int)(temp2 + g_baseChunkHeight);
+	return (int)(temp2);
 }
 
 
@@ -49,8 +48,6 @@ World::World(int seed, Camera* cam)
 	m_heightFunction = defaultHeightFunction;
 
 	updateChunksAroundCam();
-
-
 }
 
 World::World(int seed, Camera* cam, int(*heightFunction)(int x, int z, int seed))
@@ -70,6 +67,15 @@ World::~World()
 		delete c.second;
 
 	m_chunks.clear();
+}
+
+void World::update(glm::vec3 camPos)
+{
+	updateChunksAroundCam();
+	
+	updateFutures();
+
+	updateChunkdrawingOrder(camPos);
 }
 
 void World::updateChunksAroundCam()
@@ -106,33 +112,42 @@ void World::updateChunksAroundCam()
 			}
 		}
 
-
+		// did the player move into another chunk?
 		if (m_oldChunkPos.x != currChunk.x && m_oldChunkPos.y != currChunk.y)
 		{
-			for (auto& c : m_chunks)
-			{
-				float xDiff = std::abs(m_cam->getCamPos().x - c.first.x);
-				float zDiff = std::abs(m_cam->getCamPos().z - c.first.y);
-
-				if (xDiff >= m_distanceToDelete || zDiff >= m_distanceToDelete)
-				{
-#ifdef _DEBUG
-					std::cout << "Deleted Chunk at: " << c.first.x << ", " << c.first.y << "\n";
-#endif // _DEBUG
-
-					delete c.second;
-					m_chunks.erase(c.first);
-				}
-			}
-
-			m_oldChunkPos.x = currChunk.x;
-			m_oldChunkPos.y = currChunk.y;
+			deleteFurthestChunks(currChunk);
 		}
-
-
 	}
-	
-	updateFutures();
+}
+
+
+
+bool compareChunkDistances(const std::pair<float, Chunk*>& c1, const std::pair<float, Chunk*>& c2)
+{
+	return c1.first > c2.first;
+}
+
+float dist(const glm::vec3& p1, const glm::vec3 p2)
+{
+	return std::sqrt(std::pow(p2.x - p1.x, 2) +
+					 std::pow(p2.y - p1.y, 2) +
+					 std::pow(p2.z - p1.z, 2));
+}
+
+void World::updateChunkdrawingOrder(glm::vec3 camPos)
+{
+	// refresh pointers
+	m_sortedChunks.clear();
+	m_sortedChunks.reserve(m_chunks.size());
+
+	for (auto& c : m_chunks)
+	{
+		// add and calculate distance for each loaded chunk
+		glm::ivec2 chunkPos = c.second->getWorldPosXZ();
+		m_sortedChunks.push_back(std::pair<float, Chunk*>(dist(camPos, glm::vec3(static_cast<float>(chunkPos.x) + static_cast<float>(g_chunkWidthX) / 2.f, 0, static_cast<float>(chunkPos.y) + static_cast<float>(g_chunkWidthZ) / 2.f)), c.second));
+	}
+
+	std::sort(m_sortedChunks.begin(), m_sortedChunks.end(), compareChunkDistances);
 }
 
 void World::updateFutures()
@@ -144,7 +159,8 @@ void World::updateFutures()
 		if (m_chunkFutures[i].second.wait_for(std::chrono::milliseconds(1)) == std::future_status::ready)
 		{
 			Chunk* c = m_chunkFutures[i].second.get();
-			c->sendRenderContextToGPU();
+			c->sendRenderContextSolidToGPU();
+			c->sendRenderContextWaterToGPU();
 			m_chunks[c->getWorldPosXZ()] = c;
 			m_chunkFutures.erase(m_chunkFutures.begin() + i);
 			count++;
@@ -153,17 +169,15 @@ void World::updateFutures()
 		if (count >= m_maxChunkToGPULoads)
 			break;
 	}
-	
 }
-
-
 
 void World::draw(glm::mat4& mvp)
 {
-	for (auto& c : m_chunks)
-		c.second->renderChunk(mvp);
+	for (size_t i = 0; i < m_sortedChunks.size(); i++)
+	{
+		m_sortedChunks[i].second->renderChunk(mvp);
+	}
 }
-
 
 void World::destroyBlock()
 {
@@ -201,7 +215,7 @@ void World::destroyBlock()
 					{
 						m_chunks[c]->resetRenderContext(false);
 						m_chunks[c]->reloadMesh();
-						m_chunks[c]->sendRenderContextToGPU();
+						m_chunks[c]->sendRenderContextSolidToGPU();
 					}
 					return;
 				}
@@ -209,6 +223,29 @@ void World::destroyBlock()
 		}
 	}
 
+}
+
+void World::deleteFurthestChunks(glm::ivec2 currChunk)
+{
+	for (auto& c : m_chunks)
+	{
+		float xDiff = std::abs(m_cam->getCamPos().x - c.first.x);
+		float zDiff = std::abs(m_cam->getCamPos().z - c.first.y);
+
+		if (xDiff >= m_distanceToDelete || zDiff >= m_distanceToDelete)
+		{
+#ifdef _DEBUG
+			std::cout << "Deleted Chunk at: " << c.first.x << ", " << c.first.y << "\n";
+#endif // _DEBUG
+
+			delete c.second;
+			m_chunks.erase(c.first);
+		}
+	}
+
+	m_oldChunkPos.x = currChunk.x;
+	m_oldChunkPos.y = currChunk.y;
+	
 }
 
 

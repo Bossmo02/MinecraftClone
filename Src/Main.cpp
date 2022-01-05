@@ -26,6 +26,7 @@ float deltaTime = 0;
 float lastTime = 0;
 float scale = 1;
 float mixTex = 0.3f;
+float fov = 125.0f;
 bool mouseVisible = false;
 glm::mat4 view = glm::mat4(1.0f);
 void handleInput(GLFWwindow* window);
@@ -171,8 +172,8 @@ struct Vertex
 
 int main()
 {
-	int width = 1000;
-	int height = 800;
+	int width = 1500;
+	int height = 1000;
 
 	//Initialization
 	glfwInit();
@@ -257,7 +258,7 @@ int main()
 
 	// projection from camera
 	glm::mat4 projection = glm::mat4(1.0f);
-	projection = glm::perspective(glm::radians(75.0f), (float)(width / height), 0.1f, 1000.0f);
+	projection = glm::perspective(glm::radians(fov), (float)(width / height), 0.1f, 1000.0f);
 
 	glm::mat4 model = glm::mat4(1.0f);
 
@@ -276,7 +277,8 @@ int main()
 		lastTime = (float)glfwGetTime();
 		passedTime += deltaTime;
 
-		//std::cout << "Frametime: " << deltaTime << "\n";
+
+		projection = glm::perspective(glm::radians(fov), (float)(width / height), 0.1f, 1000.0f);
 
 
 		handleInput(pWindow);
@@ -289,7 +291,7 @@ int main()
 			passedTime = 0;
 			world = World(glfwGetTime());
 		}*/
-		world->updateChunksAroundCam();
+		world->update(cam.getCamPos());
 
 		glm::mat4 mvp = projection * cam.getViewMatrix() * model;
 
@@ -334,6 +336,10 @@ void handleInput(GLFWwindow* window)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	if (glfwGetKey(window, GLFW_KEY_F1) == GLFW_PRESS)
+		fov -= 0.1f;
+	if (glfwGetKey(window, GLFW_KEY_F2) == GLFW_PRESS)
+		fov += 0.1f;
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		cam.moveRelativeToCamFront(CAMERA_MOVEMENT_DIR::FORWARD, deltaTime * currentSpeedMulti);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)

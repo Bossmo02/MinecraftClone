@@ -1,29 +1,31 @@
-#include "BasicRenderer.h"
+#include "WaterRenderer.h"
 
 
 #ifdef _DEBUG
-#define CHECK_GL_ERROR(file, line) glCheckError(file, line) 
+#define CHECK_GL_ERROR(file, line) glCheckError(file, line); 
 #else
 #define CHECK_GL_ERROR(file, line) 
 #endif // !_DEBUG
 
 
 
-
-BasicRenderer& BasicRenderer::get()
+WaterRenderer& WaterRenderer::get()
 {
-	static BasicRenderer r;
-	return r;
+	static WaterRenderer wR;
+	return wR;
 }
 
-BasicRenderer::BasicRenderer()
+
+
+WaterRenderer::WaterRenderer()
 {
-	m_defaultShader.createShader("src/shader/Default.vert", "src/shader/Default.frag");
+	m_defaultShader.createShader("src/shader/DefaultWater.vert", "src/shader/DefaultWater.frag");
 }
 
-void BasicRenderer::draw(RenderContext& renderContext, glm::mat4& mvp, bool useDefaultShader)
+void WaterRenderer::draw(RenderContext& renderContext, glm::mat4& mvp, bool useDefaultShader)
 {
-	glEnable(GL_CULL_FACE);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	renderContext.vertexArray.bindVAO();
 
@@ -59,6 +61,5 @@ void BasicRenderer::draw(RenderContext& renderContext, glm::mat4& mvp, bool useD
 	
 	renderContext.vertexArray.unbindVAO();
 
-	glDisable(GL_CULL_FACE);
+	glDisable(GL_BLEND);
 }
-

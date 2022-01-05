@@ -363,3 +363,4 @@ MigrationBackup/
 FodyWeavers.xsd
 /Bericht20211230-1259.diagsession
 /Bericht20211230-1326.diagsession
+*.diagsession

@@ -5,7 +5,7 @@
 
 
 #ifdef _DEBUG
-    #define CHECK_GL_ERROR(file, line) glCheckError(file, line); 
+    #define CHECK_GL_ERROR(file, line) glCheckError(file, line)
 #else
     #define CHECK_GL_ERROR(file, line) 
 #endif // !_DEBUG

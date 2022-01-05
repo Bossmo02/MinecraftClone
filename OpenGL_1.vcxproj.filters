@@ -39,9 +39,6 @@
     <ClCompile Include="src\World\Blocks\BlockMesh.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="src\World\Blocks\BlockTypes.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
     <ClCompile Include="src\World\Chunk.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
@@ -51,7 +48,13 @@
     <ClCompile Include="Src\World\World.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="Src\World\Blocks\DebugBlock.cpp">
+    <ClCompile Include="Src\World\Blocks\WaterBlock.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\World\ChunkPiece.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Renderer\WaterRenderer.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>
@@ -845,7 +848,13 @@
     <ClInclude Include="Src\Util\HelperFunctions.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="Src\World\Blocks\DebugBlock.h">
+    <ClInclude Include="Src\World\Blocks\WaterBlock.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\World\ChunkPiece.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Renderer\WaterRenderer.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>
@@ -1248,7 +1257,7 @@
     </None>
     <None Include="src\shader\Default.frag" />
     <None Include="src\shader\Default.vert" />
-    <None Include="Src\Shader\Debug.vert" />
-    <None Include="Src\Shader\Debug.frag" />
+    <None Include="Src\Shader\DefaultWater.vert" />
+    <None Include="Src\Shader\DefaultWater.frag" />
   </ItemGroup>
 </Project>

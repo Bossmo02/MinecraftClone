@@ -1,6 +1,7 @@
 #include "Chunk.h"
 
 #include "../Renderer/BasicRenderer.h"
+#include "../Renderer/WaterRenderer.h"
 #include "../Util/Random.h"
 
 #include "../Util/Timer.h"
@@ -21,7 +22,6 @@ Chunk::Chunk(int x, int z, int* worldSeed, int(*heightFunction)(int x, int z, in
 	int zEnd = z + g_chunkWidthZ;
 
 	m_worldSeed = worldSeed;
-
 
 	
 	// heightMap includes adjacent heights from nearby chunks
@@ -67,14 +67,14 @@ Chunk::Chunk(int x, int z, int* worldSeed, int(*heightFunction)(int x, int z, in
 			glm::ivec2 globalPos = translateLocalToGlobalCoords(currPos, m_chunkPos);
 
 			// add water blocks if height is at a certain threshhold
-			if (heightMap[currPos.x][currPos.y] <= g_baseChunkHeight)
+			if (heightMap[currPos.x][currPos.y] <= g_waterLevel)
 			{
-
+				m_waterBlocks.push_back(std::make_unique<WaterBlock>(WaterBlock(globalPos.x, g_waterLevel, globalPos.y)));
 			}
 
 
 			bool blockAdded = false;
-			for (int i = heightMap[currPos.x + 1][currPos.y + 1]; i >= 0; --i)
+			for (int i = heightMap[currPos.x + 1][currPos.y + 1]; i >= g_minChunkHeight; --i)
 			{
 				// i is the current y-coordinate
 				// every hightmap index must be increased by 1, because the heightmaps dimensions, relative to the pos, range from -1 to 17
@@ -135,13 +135,14 @@ Chunk::Chunk(int x, int z, int* worldSeed, int(*heightFunction)(int x, int z, in
 		}
 	}
 
-	loadMeshToRenderContext();
+	loadSolidMeshToRenderContext();
+	loadWaterMeshToRenderContext();
 	// chunk meshes are send to the GPU in World.cpp
 }
 
 Chunk::~Chunk()
 {
-	m_renderContext.deleteContextData(true);
+	m_renderContextSolid.deleteContextData(true);
 
 	for (auto& kV : m_solidBlocks)
 	{
@@ -154,20 +155,37 @@ Chunk::~Chunk()
 	m_solidBlocks.clear();
 }
 
+void Chunk::renderChunk(glm::mat4& mvp)
+{
+	if (m_renderContextSolid.numOfIndices > 0)
+	{
+		BasicRenderer::get().draw(m_renderContextSolid, mvp, true);
+	}
+
+	if (m_renderContextWater.numOfIndices > 0)
+	{
+		WaterRenderer::get().draw(m_renderContextWater, mvp, true);
+	}
+}
 
 void Chunk::reloadMesh()
 {
-	loadMeshToRenderContext();
+	loadSolidMeshToRenderContext();
 }
 
 void Chunk::resetRenderContext(bool deleteVao)
 {
-	m_renderContext.deleteContextData(deleteVao);
+	m_renderContextSolid.deleteContextData(deleteVao);
 }
 
-void Chunk::sendRenderContextToGPU()
+void Chunk::sendRenderContextSolidToGPU()
 {
-	sendDataToGPU(&m_renderContext);
+	sendDataToGPU(&m_renderContextSolid);
+}
+
+void Chunk::sendRenderContextWaterToGPU()
+{
+	sendDataToGPU(&m_renderContextWater);
 }
 
 // returns chunk positions of adjacent chunks if they got changed in the process of destrying a block
@@ -256,7 +274,7 @@ std::vector<glm::ivec2> Chunk::loadSurroundingBlocks(glm::vec3 globalCenterPos, 
 		int index = m_solidBlocks[localPos].searchForBlock((int)globalCenterPos.y - 1);
 		if (index == -1)
 		{
-			if (globalCenterPos.y >= 0)
+			if (globalCenterPos.y >= g_minChunkHeight)
 			{
 				m_solidBlocks[localPos].addBlock(glm::vec3(globalCenterPos.x, globalCenterPos.y - 1, globalCenterPos.z), FACES_TO_DISPLAY::TOP);
 			}
@@ -334,13 +352,6 @@ glm::ivec2 Chunk::updateNearbyBlock(ChunkPiece* cPiece, glm::vec3 pos, unsigned 
 	return glm::ivec2(-1, -1);
 }
 
-void Chunk::renderChunk(glm::mat4& mvp)
-{
-	if (m_renderContext.numOfIndices > 0)
-	{
-		BasicRenderer::get().draw(m_renderContext, mvp, true);
-	}
-}
 
 glm::ivec2 Chunk::getWorldPosXZ() const
 {
@@ -406,7 +417,6 @@ void Chunk::fillSpaceWith(int xStart, int zStart, int xEnd, int zEnd, int height
 	}
 }
 
-
 bool Chunk::posInChunk(int x, int z) const
 {
 	int xMax = m_chunkPos.x + g_chunkWidthX;
@@ -428,9 +438,9 @@ bool Chunk::posOnChunkEdge(int x, int z) const
 	return false;
 }
 
-
-void Chunk::loadMeshToRenderContext()
+void Chunk::loadSolidMeshToRenderContext()
 {
+	// solid mesh --------------------------------------------
 	std::vector<BlockMeshData> allMeshData;
 	std::vector<int> numOfFacesPerBlock;
 
@@ -438,7 +448,6 @@ void Chunk::loadMeshToRenderContext()
 	{
 		for (auto& b : kV.second.blocks)
 		{
-
 			std::vector<BlockMeshData> blockMeshData = b->getVisibleMesh();
 
 			for (auto& bFace : blockMeshData)
@@ -453,7 +462,36 @@ void Chunk::loadMeshToRenderContext()
 				numOfFacesPerBlock.push_back(b->getNumOfFacesVisible());
 		}
 	}
+	// !solid mesh------------------------------------------------------
 
 	if(allMeshData.size() > 0 && numOfFacesPerBlock.size() > 0)
-		parseBlockDataToRenderContext(&m_renderContext, allMeshData, numOfFacesPerBlock);
+		parseBlockDataToRenderContext(&m_renderContextSolid, allMeshData, numOfFacesPerBlock);
+}
+
+void Chunk::loadWaterMeshToRenderContext()
+{
+	std::vector<BlockMeshData> allMeshData;
+	std::vector<int> numOfFacesPerBlock;
+
+	for (auto& wB : m_waterBlocks)
+	{
+		std::vector<BlockMeshData> blockMeshData = wB->getVisibleMesh();
+
+		for (auto& bFace : blockMeshData)
+		{
+			allMeshData.push_back(bFace);
+		}
+
+		// not visible blocks shouldn't be given to the RenderContextBuilder
+		// it doesn't expect a zero. 
+		// !!!---- Passing a zero will result in wrongly displayed blocks ----!!!
+		if (wB->getNumOfFacesVisible() != 0)
+			numOfFacesPerBlock.push_back(wB->getNumOfFacesVisible());
+	}
+
+	if (allMeshData.size() > 0 && numOfFacesPerBlock.size() > 0)
+	{
+		parseBlockDataToRenderContext(&m_renderContextWater, allMeshData, numOfFacesPerBlock);
+	}
+	
 }

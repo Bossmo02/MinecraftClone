@@ -1,8 +1,8 @@
 #include "Block.h"
 
-Block::Block(int x, int y, int z, BLOCK_ID id)
+Block::Block(float x, float y, float z, BLOCK_ID id)
 {
-	m_worldPos = glm::ivec3(x, y, z);
+	m_worldPos = glm::vec3(x, y, z);
 	m_blockID = id;
 
 	// blocks are invisible by default
@@ -10,9 +10,9 @@ Block::Block(int x, int y, int z, BLOCK_ID id)
 	m_visibleFaces = 0;
 }
 
-Block::Block(int x, int y, int z, BLOCK_ID id, unsigned char dir)
+Block::Block(float x, float y, float z, BLOCK_ID id, unsigned char dir)
 {
-	m_worldPos = glm::ivec3(x, y, z);
+	m_worldPos = glm::vec3(x, y, z);
 	m_blockID = id;
 
 	// blocks are invisible by default
@@ -86,7 +86,7 @@ std::vector<BlockMeshData> Block::getVisibleMesh(float scale)
 
 		setVerticesToWorldPosScaled(scale, mesh.vertices);
 		
-		mesh.texCoords = BlockType::get().getTexCoords(m_blockID, FACES_TO_DISPLAY::BACK);
+		mesh.texCoords = getTexCoords(m_blockID, FACES_TO_DISPLAY::BACK);
 
 		faceMeshes.push_back(mesh);
 		timesFacesAdded++;
@@ -97,7 +97,7 @@ std::vector<BlockMeshData> Block::getVisibleMesh(float scale)
 
 		setVerticesToWorldPosScaled(scale, mesh.vertices);
 
-		mesh.texCoords = BlockType::get().getTexCoords(m_blockID, FACES_TO_DISPLAY::FRONT);
+		mesh.texCoords = getTexCoords(m_blockID, FACES_TO_DISPLAY::FRONT);
 
 		faceMeshes.push_back(mesh);
 		timesFacesAdded++;
@@ -108,7 +108,7 @@ std::vector<BlockMeshData> Block::getVisibleMesh(float scale)
 
 		setVerticesToWorldPosScaled(scale, mesh.vertices);
 
-		mesh.texCoords = BlockType::get().getTexCoords(m_blockID, FACES_TO_DISPLAY::LEFT);
+		mesh.texCoords = getTexCoords(m_blockID, FACES_TO_DISPLAY::LEFT);
 
 		faceMeshes.push_back(mesh);
 		timesFacesAdded++;
@@ -119,7 +119,7 @@ std::vector<BlockMeshData> Block::getVisibleMesh(float scale)
 
 		setVerticesToWorldPosScaled(scale, mesh.vertices);
 
-		mesh.texCoords = BlockType::get().getTexCoords(m_blockID, FACES_TO_DISPLAY::RIGHT);
+		mesh.texCoords = getTexCoords(m_blockID, FACES_TO_DISPLAY::RIGHT);
 
 		faceMeshes.push_back(mesh);
 		timesFacesAdded++;
@@ -130,7 +130,7 @@ std::vector<BlockMeshData> Block::getVisibleMesh(float scale)
 
 		setVerticesToWorldPosScaled(scale, mesh.vertices);
 
-		mesh.texCoords = BlockType::get().getTexCoords(m_blockID, FACES_TO_DISPLAY::BOTTOM);
+		mesh.texCoords = getTexCoords(m_blockID, FACES_TO_DISPLAY::BOTTOM);
 
 		faceMeshes.push_back(mesh);
 		timesFacesAdded++;
@@ -141,7 +141,7 @@ std::vector<BlockMeshData> Block::getVisibleMesh(float scale)
 
 		setVerticesToWorldPosScaled(scale, mesh.vertices);
 
-		mesh.texCoords = BlockType::get().getTexCoords(m_blockID, FACES_TO_DISPLAY::TOP);
+		mesh.texCoords = getTexCoords(m_blockID, FACES_TO_DISPLAY::TOP);
 
 		faceMeshes.push_back(mesh);
 		timesFacesAdded++;

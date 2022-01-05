@@ -3,8 +3,10 @@
 
 
 #include <unordered_map>
+#include <future>
 
-#include "Blocks/Block.h"
+#include "ChunkPiece.h"
+#include "Blocks/WaterBlock.h"
 #include "../Renderer/RenderContextBuilder.h"
 #include "Gen/IVec2Hasher.h"
 #include "Gen/Noise.h"
@@ -13,64 +15,11 @@
 
 const unsigned int g_chunkWidthZ = 32;
 const unsigned int g_chunkWidthX = 32;
-const unsigned int g_baseChunkHeight = 5;
+
 
 const unsigned int g_chunkSquared = 1024;
 const unsigned int g_chunkCube = 32768;
 
-
-struct ChunkPiece
-{
-    std::vector<std::unique_ptr<Block>> blocks;
-    std::vector<short> reservedBlockPositions;
-    short height, stoneHeight;
-
-    void setup()
-    {
-        for (int i = height; i >= 0; --i)
-        {
-            reservedBlockPositions.push_back((short)i);
-        }
-    }
-
-    int searchForBlock(unsigned int y) const
-    {
-        // returns the index of the block at given height
-        for (int i = 0; i < blocks.size(); ++i)
-        {
-            if (blocks[i].get()->getWorldPos().y == y)
-                return i;
-        }
-
-        return -1;
-    }
-
-    void addBlock(glm::vec3 pos, unsigned char visibleFaces)
-    {
-        if (blockReserved(pos.y))
-        {
-            if(pos.y == height)
-                blocks.push_back(std::make_unique<Block>(Block((int)pos.x, (int)pos.y, (int)pos.z, BLOCK_ID::GRASS, visibleFaces)));
-            else if (pos.y <= stoneHeight && pos.y >= 0)
-                blocks.push_back(std::make_unique<Block>(Block((int)pos.x, (int)pos.y, (int)pos.z, BLOCK_ID::STONE, visibleFaces)));
-            else
-                blocks.push_back(std::make_unique<Block>(Block((int)pos.x, (int)pos.y, (int)pos.z, BLOCK_ID::DIRT, visibleFaces)));
-        }
-    }
-
-    bool blockReserved(unsigned int y)
-    {
-        for (size_t i = 0; i < reservedBlockPositions.size(); ++i)
-        {
-            if (reservedBlockPositions[i] == (short)y)
-            {
-                reservedBlockPositions.erase(reservedBlockPositions.begin() + i);
-                return true;
-            }
-        }
-        return false;
-    }
-};
 
 
 class Chunk
@@ -80,14 +29,13 @@ public:
 	Chunk(int x, int z, int* worldSeed, int(*heightFunction)(int x, int z, int seed));
 	~Chunk();
 
-    void init();
+	void renderChunk(glm::mat4& mvp);
 
 	void reloadMesh();
     void resetRenderContext(bool deleteVao);
-    void sendRenderContextToGPU();
+    void sendRenderContextSolidToGPU();
+    void sendRenderContextWaterToGPU();
     std::vector<glm::ivec2> deleteBlock(glm::ivec3 globalBlockPos, size_t index, std::vector<Chunk*>* adjacentChunks);
-
-	void renderChunk(glm::mat4& mvp);
 
 	glm::ivec2 getWorldPosXZ() const;
 
@@ -102,7 +50,8 @@ public:
     }
 
     
-	RenderContext m_renderContext;
+	RenderContext m_renderContextSolid;
+    RenderContext m_renderContextWater;
 
 private:
 
@@ -112,14 +61,16 @@ private:
 
     std::vector<glm::ivec2> loadSurroundingBlocks(glm::vec3 globalCenterPos, std::vector<Chunk*>* adjacentChunks);
     glm::ivec2 updateNearbyBlock(ChunkPiece* cPiece, glm::vec3 pos, unsigned char facesToDisplay);
-	void loadMeshToRenderContext();
+	void loadSolidMeshToRenderContext();
+    void loadWaterMeshToRenderContext();
 
-    // blocks are added to m_blocks when they are visible
+    // visible blocks are stored in these containers
 	std::unordered_map<glm::ivec2, ChunkPiece, IVec2Hasher> m_solidBlocks;
-    std::unordered_map<glm::ivec2, ChunkPiece, IVec2Hasher> m_transparentBlocks;
+    std::vector<std::unique_ptr<WaterBlock>> m_waterBlocks;
+
 	glm::ivec2 m_chunkPos;
-    int* m_heightFunc;
     int* m_worldSeed;
+
 
 };
 
