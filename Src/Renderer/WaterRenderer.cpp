@@ -22,7 +22,7 @@ WaterRenderer::WaterRenderer()
 	m_defaultShader.createShader("src/shader/DefaultWater.vert", "src/shader/DefaultWater.frag");
 }
 
-void WaterRenderer::draw(RenderContext& renderContext, glm::mat4& mvp, bool useDefaultShader)
+void WaterRenderer::draw(RenderContext& renderContext, glm::mat4& mvp, float totalTime, bool useDefaultShader)
 {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -40,6 +40,7 @@ void WaterRenderer::draw(RenderContext& renderContext, glm::mat4& mvp, bool useD
 	if (useDefaultShader)
 	{
 		glUniformMatrix4fv(glGetUniformLocation(m_defaultShader.ID, "u_mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
+		glUniform1f(glGetUniformLocation(m_defaultShader.ID, "u_time"), totalTime);
 		glUniform1i(glGetUniformLocation(m_defaultShader.ID, "u_texture"), 0);
 	}
 	else

@@ -3,24 +3,27 @@
 
 #include "Blocks/Block.h"
 
+#include <deque>
+
 const int g_minChunkHeight = -40;
 const int g_waterLevel = 0;
 
 
 struct ChunkPiece
 {
-    std::vector<std::unique_ptr<Block>> blocks;
+    std::deque<std::unique_ptr<Block>> blocks;
 
-    // uses a lot of memory
-    std::vector<short> reservedBlockPositions;
-    //
+    // uses a lot of memory when a lot of blocks were destroyed
+    std::deque<short> usedBlockPositions;
+   
 
     short height, stoneHeight;
 
     void setup();
     int searchForBlock(unsigned int y) const;
     void addBlock(glm::vec3 pos, unsigned char visibleFaces);
-    bool blockReserved(short y);
+    bool blockPosUsed(short y);
+    void deleteBlock(size_t index);
 };
 
 

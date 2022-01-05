@@ -4,10 +4,8 @@
 
 void ChunkPiece::setup()
 {
-    for (short i = height; i >= g_minChunkHeight; --i)
-    {
-        reservedBlockPositions.push_back((short)i);
-    }
+    // necessary so that blocks can't be placed on top of their original height
+    usedBlockPositions.push_back((short)height + 1);
 }
 
 int ChunkPiece::searchForBlock(unsigned int y) const
@@ -24,28 +22,45 @@ int ChunkPiece::searchForBlock(unsigned int y) const
 
 void ChunkPiece::addBlock(glm::vec3 pos, unsigned char visibleFaces)
 {
-    if (blockReserved(pos.y))
+    if (!blockPosUsed(pos.y))
     {
         if (pos.y == height && height > g_waterLevel)
+        {
             blocks.push_back(std::make_unique<Block>(Block((int)pos.x, (int)pos.y, (int)pos.z, BLOCK_ID::GRASS, visibleFaces)));
+            usedBlockPositions.push_back((short)pos.y);
+        }
         else if (pos.y == g_waterLevel)
+        {
             blocks.push_back(std::make_unique<Block>(Block((int)pos.x, (int)pos.y, (int)pos.z, BLOCK_ID::SAND, visibleFaces)));
+            usedBlockPositions.push_back((short)pos.y);
+        }
         else if (pos.y <= stoneHeight && pos.y >= g_minChunkHeight)
+        {
             blocks.push_back(std::make_unique<Block>(Block((int)pos.x, (int)pos.y, (int)pos.z, BLOCK_ID::STONE, visibleFaces)));
+            usedBlockPositions.push_back((short)pos.y);
+        }
         else
+        {
             blocks.push_back(std::make_unique<Block>(Block((int)pos.x, (int)pos.y, (int)pos.z, BLOCK_ID::DIRT, visibleFaces)));
+            usedBlockPositions.push_back((short)pos.y);
+        }
     }
 }
 
-bool ChunkPiece::blockReserved(short y)
+bool ChunkPiece::blockPosUsed(short y)
 {
-    for (size_t i = 0; i < reservedBlockPositions.size(); ++i)
+    for (size_t i = 0; i < usedBlockPositions.size(); ++i)
     {
-        if (reservedBlockPositions[i] == (short)y)
+        if (usedBlockPositions[i] == (short)y)
         {
-            reservedBlockPositions.erase(reservedBlockPositions.begin() + i);
             return true;
         }
     }
     return false;
+}
+
+void ChunkPiece::deleteBlock(size_t index)
+{
+    blocks[index].reset();
+    blocks.erase(blocks.begin() + index);
 }

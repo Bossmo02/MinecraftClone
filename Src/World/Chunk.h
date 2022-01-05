@@ -4,6 +4,7 @@
 
 #include <unordered_map>
 #include <future>
+#include <deque>
 
 #include "ChunkPiece.h"
 #include "Blocks/WaterBlock.h"
@@ -29,7 +30,7 @@ public:
 	Chunk(int x, int z, int* worldSeed, int(*heightFunction)(int x, int z, int seed));
 	~Chunk();
 
-	void renderChunk(glm::mat4& mvp);
+	void renderChunk(glm::mat4& mvp, float totalTime);
 
 	void reloadMesh();
     void resetRenderContext(bool deleteVao);
@@ -66,7 +67,7 @@ private:
 
     // visible blocks are stored in these containers
 	std::unordered_map<glm::ivec2, ChunkPiece, IVec2Hasher> m_solidBlocks;
-    std::vector<std::unique_ptr<WaterBlock>> m_waterBlocks;
+    std::deque<std::unique_ptr<WaterBlock>> m_waterBlocks;
 
 	glm::ivec2 m_chunkPos;
     int* m_worldSeed;

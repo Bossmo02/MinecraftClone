@@ -13,7 +13,7 @@ public:
 
     static WaterRenderer& get();
 
-    void draw(RenderContext& renderContext, glm::mat4& mvp, bool useDefaultShader = false);
+    void draw(RenderContext& renderContext, glm::mat4& mvp, float totalTime, bool useDefaultShader = false);
 
 
 

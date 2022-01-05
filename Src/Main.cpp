@@ -295,7 +295,7 @@ int main()
 
 		glm::mat4 mvp = projection * cam.getViewMatrix() * model;
 
-		world->draw(mvp);
+		world->draw(mvp, lastTime);
 
 
 		//// create transformations

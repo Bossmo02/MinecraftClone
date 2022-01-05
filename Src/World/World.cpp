@@ -29,7 +29,7 @@ int defaultHeightFunction(int x, int z, int seed)
 	n1.SetFractalWeightedStrength(mountainHeight);
 
 
-	float temp1 = ((n1.GetNoise((float)x, (float)z, n2.GetNoise((float)x, (float)z) * n2Multi)) + 2.f);
+	float temp1 = ((n1.GetNoise((float)x, (float)z, n2.GetNoise((float)x, (float)z) * n2Multi)) - 2.f);
 	float temp2 = 0;
 
 	temp2 = temp1 * 20;
@@ -115,7 +115,9 @@ void World::updateChunksAroundCam()
 		// did the player move into another chunk?
 		if (m_oldChunkPos.x != currChunk.x && m_oldChunkPos.y != currChunk.y)
 		{
-			deleteFurthestChunks(currChunk);
+			deleteFurthestChunks();
+			m_oldChunkPos.x = currChunk.x;
+			m_oldChunkPos.y = currChunk.y;
 		}
 	}
 }
@@ -138,7 +140,6 @@ void World::updateChunkdrawingOrder(glm::vec3 camPos)
 {
 	// refresh pointers
 	m_sortedChunks.clear();
-	m_sortedChunks.reserve(m_chunks.size());
 
 	for (auto& c : m_chunks)
 	{
@@ -171,11 +172,11 @@ void World::updateFutures()
 	}
 }
 
-void World::draw(glm::mat4& mvp)
+void World::draw(glm::mat4& mvp, float totalTime)
 {
 	for (size_t i = 0; i < m_sortedChunks.size(); i++)
 	{
-		m_sortedChunks[i].second->renderChunk(mvp);
+		m_sortedChunks[i].second->renderChunk(mvp, totalTime);
 	}
 }
 
@@ -225,7 +226,7 @@ void World::destroyBlock()
 
 }
 
-void World::deleteFurthestChunks(glm::ivec2 currChunk)
+void World::deleteFurthestChunks()
 {
 	for (auto& c : m_chunks)
 	{
@@ -241,11 +242,7 @@ void World::deleteFurthestChunks(glm::ivec2 currChunk)
 			delete c.second;
 			m_chunks.erase(c.first);
 		}
-	}
-
-	m_oldChunkPos.x = currChunk.x;
-	m_oldChunkPos.y = currChunk.y;
-	
+	}	
 }
 
 

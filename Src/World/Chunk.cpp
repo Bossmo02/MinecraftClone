@@ -51,7 +51,7 @@ Chunk::Chunk(int x, int z, int* worldSeed, int(*heightFunction)(int x, int z, in
 		}
 	}
 
-	// reserve block positions
+	// setup used block positions
 	for (auto& e : m_solidBlocks)
 	{
 		e.second.setup();
@@ -155,7 +155,7 @@ Chunk::~Chunk()
 	m_solidBlocks.clear();
 }
 
-void Chunk::renderChunk(glm::mat4& mvp)
+void Chunk::renderChunk(glm::mat4& mvp, float totalTime)
 {
 	if (m_renderContextSolid.numOfIndices > 0)
 	{
@@ -164,7 +164,7 @@ void Chunk::renderChunk(glm::mat4& mvp)
 
 	if (m_renderContextWater.numOfIndices > 0)
 	{
-		WaterRenderer::get().draw(m_renderContextWater, mvp, true);
+		WaterRenderer::get().draw(m_renderContextWater, mvp, totalTime, true);
 	}
 }
 
@@ -365,8 +365,6 @@ void Chunk::fillSpaceY(int x, int z, int height)
 
 	glm::ivec2 localPos = translateGlobalToLocalCoords(glm::ivec2(x, z), g_chunkWidthX, g_chunkWidthZ);
 
-	m_solidBlocks[localPos].blocks.reserve(height);
-
 	for (int i = 0; i <= height; ++i)
 	{
 		if (i == height)
@@ -443,6 +441,7 @@ void Chunk::loadSolidMeshToRenderContext()
 	// solid mesh --------------------------------------------
 	std::vector<BlockMeshData> allMeshData;
 	std::vector<int> numOfFacesPerBlock;
+	numOfFacesPerBlock.reserve(m_solidBlocks.size());
 
 	for (auto& kV : m_solidBlocks)
 	{
@@ -466,12 +465,14 @@ void Chunk::loadSolidMeshToRenderContext()
 
 	if(allMeshData.size() > 0 && numOfFacesPerBlock.size() > 0)
 		parseBlockDataToRenderContext(&m_renderContextSolid, allMeshData, numOfFacesPerBlock);
+
 }
 
 void Chunk::loadWaterMeshToRenderContext()
 {
 	std::vector<BlockMeshData> allMeshData;
 	std::vector<int> numOfFacesPerBlock;
+	numOfFacesPerBlock.reserve(m_waterBlocks.size());
 
 	for (auto& wB : m_waterBlocks)
 	{
@@ -493,5 +494,4 @@ void Chunk::loadWaterMeshToRenderContext()
 	{
 		parseBlockDataToRenderContext(&m_renderContextWater, allMeshData, numOfFacesPerBlock);
 	}
-	
 }

@@ -7,6 +7,10 @@ out vec2 textureCoordinates;
 
 
 uniform mat4 u_mvp;
+uniform float u_time;
+
+
+#define PI 3.1415926535897932384626433832795
 
 
 void main()
