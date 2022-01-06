@@ -2,7 +2,7 @@
 
 Block::Block(float x, float y, float z, BLOCK_ID id)
 {
-	m_worldPos = glm::vec3(x, y, z);
+	m_posInChunk = glm::vec3(x, y, z);
 	m_blockID = id;
 
 	// blocks are invisible by default
@@ -12,7 +12,7 @@ Block::Block(float x, float y, float z, BLOCK_ID id)
 
 Block::Block(float x, float y, float z, BLOCK_ID id, unsigned char dir)
 {
-	m_worldPos = glm::vec3(x, y, z);
+	m_posInChunk = glm::vec3(x, y, z);
 	m_blockID = id;
 
 	// blocks are invisible by default
@@ -55,7 +55,7 @@ int Block::getNumOfFacesVisible() const
 
 const glm::ivec3 Block::getWorldPos() const
 {
-	return m_worldPos;
+	return m_posInChunk;
 }
 
 bool Block::isFaceVisible(unsigned char dir) const
@@ -84,7 +84,7 @@ std::vector<BlockMeshData> Block::getVisibleMesh(float scale)
 	{
 		BlockMeshData mesh = getBlockBackMeshData(timesFacesAdded);
 
-		setVerticesToWorldPosScaled(scale, mesh.vertices);
+		setVerticesToChunkPosScaled(scale, mesh.vertices);
 		
 		mesh.texCoords = getTexCoords(m_blockID, FACES_TO_DISPLAY::BACK);
 
@@ -95,7 +95,7 @@ std::vector<BlockMeshData> Block::getVisibleMesh(float scale)
 	{
 		BlockMeshData mesh = getBlockFrontMeshData(timesFacesAdded);
 
-		setVerticesToWorldPosScaled(scale, mesh.vertices);
+		setVerticesToChunkPosScaled(scale, mesh.vertices);
 
 		mesh.texCoords = getTexCoords(m_blockID, FACES_TO_DISPLAY::FRONT);
 
@@ -106,7 +106,7 @@ std::vector<BlockMeshData> Block::getVisibleMesh(float scale)
 	{
 		BlockMeshData mesh = getBlockLeftMeshData(timesFacesAdded);
 
-		setVerticesToWorldPosScaled(scale, mesh.vertices);
+		setVerticesToChunkPosScaled(scale, mesh.vertices);
 
 		mesh.texCoords = getTexCoords(m_blockID, FACES_TO_DISPLAY::LEFT);
 
@@ -117,7 +117,7 @@ std::vector<BlockMeshData> Block::getVisibleMesh(float scale)
 	{
 		BlockMeshData mesh = getBlockRightMeshData(timesFacesAdded);
 
-		setVerticesToWorldPosScaled(scale, mesh.vertices);
+		setVerticesToChunkPosScaled(scale, mesh.vertices);
 
 		mesh.texCoords = getTexCoords(m_blockID, FACES_TO_DISPLAY::RIGHT);
 
@@ -128,7 +128,7 @@ std::vector<BlockMeshData> Block::getVisibleMesh(float scale)
 	{
 		BlockMeshData mesh = getBlockBottomMeshData(timesFacesAdded);
 
-		setVerticesToWorldPosScaled(scale, mesh.vertices);
+		setVerticesToChunkPosScaled(scale, mesh.vertices);
 
 		mesh.texCoords = getTexCoords(m_blockID, FACES_TO_DISPLAY::BOTTOM);
 
@@ -139,7 +139,7 @@ std::vector<BlockMeshData> Block::getVisibleMesh(float scale)
 	{
 		BlockMeshData mesh = getBlockTopMeshData(timesFacesAdded);
 
-		setVerticesToWorldPosScaled(scale, mesh.vertices);
+		setVerticesToChunkPosScaled(scale, mesh.vertices);
 
 		mesh.texCoords = getTexCoords(m_blockID, FACES_TO_DISPLAY::TOP);
 
@@ -150,23 +150,111 @@ std::vector<BlockMeshData> Block::getVisibleMesh(float scale)
 	return faceMeshes;
 }
 
-void Block::setVerticesToWorldPosScaled(float scale, std::vector<GLfloat>& verts)
+std::vector<BlockMeshDataForSingleVBO> Block::getVisibleMeshForSingleVBO(float scale)
+{
+	unsigned int timesFacesAdded = 0;
+	std::vector<BlockMeshDataForSingleVBO> faceMeshes;
+
+	int numOfFaces = getNumOfFacesVisible();
+	faceMeshes.reserve(numOfFaces);
+
+	if (m_visibleFaces & FACES_TO_DISPLAY::BACK)
+	{
+		BlockMeshDataForSingleVBO mesh = getBlockBackMeshDataForSingleVBO(timesFacesAdded);
+
+		setVerticesToChunkPosScaled(scale, mesh.vertices);
+
+		mesh.texCoords = getTexCoordsForSingleVBO(m_blockID, FACES_TO_DISPLAY::BACK);
+
+		faceMeshes.push_back(mesh);
+		timesFacesAdded++;
+	}
+	if (m_visibleFaces & FACES_TO_DISPLAY::FRONT)
+	{
+		BlockMeshDataForSingleVBO mesh = getBlockFrontMeshDataForSingleVBO(timesFacesAdded);
+
+		setVerticesToChunkPosScaled(scale, mesh.vertices);
+
+		mesh.texCoords = getTexCoordsForSingleVBO(m_blockID, FACES_TO_DISPLAY::FRONT);
+
+		faceMeshes.push_back(mesh);
+		timesFacesAdded++;
+	}
+	if (m_visibleFaces & FACES_TO_DISPLAY::LEFT)
+	{
+		BlockMeshDataForSingleVBO mesh = getBlockLeftMeshDataForSingleVBO(timesFacesAdded);
+
+		setVerticesToChunkPosScaled(scale, mesh.vertices);
+
+		mesh.texCoords = getTexCoordsForSingleVBO(m_blockID, FACES_TO_DISPLAY::LEFT);
+
+		faceMeshes.push_back(mesh);
+		timesFacesAdded++;
+	}
+	if (m_visibleFaces & FACES_TO_DISPLAY::RIGHT)
+	{
+		BlockMeshDataForSingleVBO mesh = getBlockRightMeshDataForSingleVBO(timesFacesAdded);
+
+		setVerticesToChunkPosScaled(scale, mesh.vertices);
+
+		mesh.texCoords = getTexCoordsForSingleVBO(m_blockID, FACES_TO_DISPLAY::RIGHT);
+
+		faceMeshes.push_back(mesh);
+		timesFacesAdded++;
+	}
+	if (m_visibleFaces & FACES_TO_DISPLAY::BOTTOM)
+	{
+		BlockMeshDataForSingleVBO mesh = getBlockBottomMeshDataForSingleVBO(timesFacesAdded);
+
+		setVerticesToChunkPosScaled(scale, mesh.vertices);
+
+		mesh.texCoords = getTexCoordsForSingleVBO(m_blockID, FACES_TO_DISPLAY::BOTTOM);
+
+		faceMeshes.push_back(mesh);
+		timesFacesAdded++;
+	}
+	if (m_visibleFaces & FACES_TO_DISPLAY::TOP)
+	{
+		BlockMeshDataForSingleVBO mesh = getBlockTopMeshDataForSingleVBO(timesFacesAdded);
+
+		setVerticesToChunkPosScaled(scale, mesh.vertices);
+
+		mesh.texCoords = getTexCoordsForSingleVBO(m_blockID, FACES_TO_DISPLAY::TOP);
+
+		faceMeshes.push_back(mesh);
+		timesFacesAdded++;
+	}
+
+	return faceMeshes;
+}
+
+void Block::setVerticesToChunkPosScaled(float scale, std::deque<GLfloat>& verts)
 {
 	for (size_t i = 0; i < verts.size(); i += 3)
 	{
-		verts[i] = (verts[i] * scale) + m_worldPos.x;
-		verts[i + 1] = (verts[i + 1] * scale) + m_worldPos.y;
-		verts[i + 2] = (verts[i + 2] * scale) + m_worldPos.z;
+		verts[i] = (verts[i] * scale) + m_posInChunk.x;
+		verts[i + 1] = (verts[i + 1] * scale) + m_posInChunk.y;
+		verts[i + 2] = (verts[i + 2] * scale) + m_posInChunk.z;
 	}
 }
 
-void Block::setVerticesToWorldPos(std::vector<GLfloat>& verts)
+void Block::setVerticesToChunkPosScaled(float scale, std::deque<int>& verts)
 {
 	for (size_t i = 0; i < verts.size(); i += 3)
 	{
-		verts[i]	 = verts[i]		+ m_worldPos.x;
-		verts[i + 1] = verts[i + 1]	+ m_worldPos.y;
-		verts[i + 2] = verts[i + 2] + m_worldPos.z;
+		verts[i] = (verts[i] * scale) + m_posInChunk.x;
+		verts[i + 1] = (verts[i + 1] * scale) + m_posInChunk.y;
+		verts[i + 2] = (verts[i + 2] * scale) + m_posInChunk.z;
+	}
+}
+
+void Block::setVerticesToChunkPos(std::deque<GLfloat>& verts)
+{
+	for (size_t i = 0; i < verts.size(); i += 3)
+	{
+		verts[i]	 = verts[i]		+ m_posInChunk.x;
+		verts[i + 1] = verts[i + 1]	+ m_posInChunk.y;
+		verts[i + 2] = verts[i + 2] + m_posInChunk.z;
 	}
 }
 

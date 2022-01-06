@@ -4,14 +4,21 @@
 //---------------
 // Functions used for multithreading
 
-Chunk* loadChunkAsync(int x, int z, int* seed, int(*heightFunction)(int x, int z, int seed))
+Chunk* loadChunkAsync(int x, int z, int* seed, int(*heightFunction)(int x, int z, int seed), bool singleVBOMode)
 {
-	Chunk* c = new Chunk(x, z, seed, heightFunction);
+	Chunk* c = new Chunk(x, z, seed, heightFunction, singleVBOMode);
 
 	return c;
 }
 //-----------------------------
 
+
+//-------------------------------------
+// standart heightfunction
+
+#ifdef _DEBUG
+	float highest = -1, lowest = 1;
+#endif // _DEBUG
 
 int defaultHeightFunction(int x, int z, int seed)
 {
@@ -19,31 +26,47 @@ int defaultHeightFunction(int x, int z, int seed)
 	n1.SetSeed(seed);
 	n2.SetSeed(seed + 1);
 
-	float n2Multi = 60.4f;
-	float mountainWidth = 0.2f;		// lower values -> wider mountains
-	float mountainHeight = 10.f;	// higher values -> higher mountain tops
+	float n2Multi = 1.f;
+	float mountainWidth = 0.5f;		// idk what these values are doing
+	float mountainHeight = 8.f;		// but it looks nice
 
 	n1.SetFrequency(0.005f);
 	n1.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
 	n1.SetFractalLacunarity(mountainWidth);
 	n1.SetFractalWeightedStrength(mountainHeight);
+	n1.SetFractalGain(0.5f);
 
 
-	float temp1 = ((n1.GetNoise((float)x, (float)z, n2.GetNoise((float)x, (float)z) * n2Multi)) - 2.f);
+	n2.SetFractalType(FastNoiseLite::FractalType::FractalType_FBm);
+	n2.SetFractalLacunarity(0.8f);
+	n2.SetFractalWeightedStrength(10.f);
+	n2.SetFractalGain(4.f);
+
+
+	float temp1 = ((n1.GetNoise((float)x, (float)z, n2.GetNoise((float)x, (float)z) * n2Multi)) + 0.5f) / 1.5f;
 	float temp2 = 0;
+
+#ifdef _DEBUG
+	if (temp1 > highest)
+		highest = temp1;
+	if (temp1 < lowest)
+		lowest = temp1;
+#endif // !_DEBUG
 
 	temp2 = temp1 * 20;
 	
-	return (int)(temp2);
+	//return (int)(temp2);
+	return 0;
 }
+//-----------------------------------------------------------------------
 
 
-
-World::World(int seed, Camera* cam)
+World::World(int seed, Camera* cam, bool singleVBOMode)
 {
 	m_noise.SetSeed(seed);
 	m_cam = cam;
 	m_seed = seed;
+	m_useSingleVBOMode = singleVBOMode;
 
 	m_heightFunction = defaultHeightFunction;
 
@@ -106,7 +129,7 @@ void World::updateChunksAroundCam()
 				// check if chunk is loaded
 				if (!m_chunks.contains(currChunk) && !loading && timesChunkAdded < m_maxChunkAddPerIter)
 				{
-					m_chunkFutures.push_back(std::pair<glm::ivec2, std::future<Chunk*>>(currChunk, std::async(std::launch::async, loadChunkAsync, currChunk.x, currChunk.y, &m_seed, m_heightFunction)));
+					m_chunkFutures.push_back(std::pair<glm::ivec2, std::future<Chunk*>>(currChunk, std::async(std::launch::async, loadChunkAsync, currChunk.x, currChunk.y, &m_seed, m_heightFunction, m_useSingleVBOMode)));
 					timesChunkAdded++;
 				}
 			}
@@ -165,6 +188,11 @@ void World::updateFutures()
 			m_chunks[c->getWorldPosXZ()] = c;
 			m_chunkFutures.erase(m_chunkFutures.begin() + i);
 			count++;
+
+#ifdef _DEBUG
+			std::cout << highest << "\t" << lowest << "\n";
+#endif // !_DEBUG
+
 		}
 
 		if (count >= m_maxChunkToGPULoads)
@@ -172,11 +200,11 @@ void World::updateFutures()
 	}
 }
 
-void World::draw(glm::mat4& mvp, float totalTime)
+void World::render(glm::mat4& mvp, float totalTime)
 {
 	for (size_t i = 0; i < m_sortedChunks.size(); i++)
 	{
-		m_sortedChunks[i].second->renderChunk(mvp, totalTime);
+		m_sortedChunks[i].second->renderChunk(mvp, totalTime, m_useSingleVBOMode);
 	}
 }
 
@@ -228,6 +256,8 @@ void World::destroyBlock()
 
 void World::deleteFurthestChunks()
 {
+	std::deque<glm::ivec2> positionsToDelete;
+
 	for (auto& c : m_chunks)
 	{
 		float xDiff = std::abs(m_cam->getCamPos().x - c.first.x);
@@ -239,10 +269,14 @@ void World::deleteFurthestChunks()
 			std::cout << "Deleted Chunk at: " << c.first.x << ", " << c.first.y << "\n";
 #endif // _DEBUG
 
-			delete c.second;
-			m_chunks.erase(c.first);
+			positionsToDelete.push_back(c.first);
 		}
 	}	
+
+	for (size_t i = 0; i < positionsToDelete.size(); ++i)
+	{
+		m_chunks.erase(positionsToDelete[i]);
+	}
 }
 
 

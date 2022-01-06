@@ -9,11 +9,16 @@ out float lightLevel;
 
 
 uniform mat4 u_mvp;
+uniform vec2 u_chunkPos;
 
 
 void main()
 {
-	gl_Position = u_mvp * vec4(inVertexPos, 1.0);
+	float newXPos = inVertexPos.x + u_chunkPos.x;
+	float newZPos = inVertexPos.z + u_chunkPos.y;
+
+
+	gl_Position = u_mvp * vec4(newXPos, inVertexPos.y, newZPos, 1.0);
 	textureCoordinates = inTexCoords;
 	lightLevel = inLightLevel;
 }

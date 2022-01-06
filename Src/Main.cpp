@@ -209,7 +209,7 @@ int main()
 	//Creating Buffers
 
 	
-	world = new World(2, &cam);
+	world = new World(2, &cam, true);
 
 
 	//VAO firstVao;
@@ -295,7 +295,7 @@ int main()
 
 		glm::mat4 mvp = projection * cam.getViewMatrix() * model;
 
-		world->draw(mvp, lastTime);
+		world->render(mvp, lastTime);
 
 
 		//// create transformations

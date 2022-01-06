@@ -84,7 +84,7 @@ std::vector<GLuint> g_indicesFaceLeft =
 	0,	3,	2
 };
 
-std::vector<GLfloat> g_verticesLeft =
+std::deque<GLfloat> g_verticesLeft =
 {
 	0.0f,	0.0f,	0.0f,
 	0.0f,	0.0f,	1.0f,
@@ -148,6 +148,10 @@ GLfloat g_lightLevelTop		= 0.9f;
 GLfloat g_lightLevelSide	= 0.6f;
 GLfloat g_lightLevelBottom	= 0.4f;
 
+
+int g_singleVBOLightLevelTop	= 20;
+int g_singleVBOLightLevelSide	= 10;
+int g_singleVBOLightLevelBottom = 5;
 
 
 BlockMeshData getBlockBackMeshData(int indicesIndex)
@@ -240,9 +244,9 @@ BlockMeshData getBlockTopMeshData(int indicesIndex)
 	return data;
 }
 
-std::vector<BlockMeshData> getAllBlockData(int indicesIndex)
+std::deque<BlockMeshData> getAllBlockData(int indicesIndex)
 {
-	std::vector<BlockMeshData> allData;
+	std::deque<BlockMeshData> allData;
 
 	allData.push_back(getBlockBackMeshData(indicesIndex));
 	allData.push_back(getBlockFrontMeshData(indicesIndex));
@@ -252,6 +256,96 @@ std::vector<BlockMeshData> getAllBlockData(int indicesIndex)
 	allData.push_back(getBlockTopMeshData(indicesIndex));
 
 	return allData;
+}
+
+BlockMeshDataForSingleVBO getBlockBackMeshDataForSingleVBO(int indicesIndex)
+{
+	BlockMeshDataForSingleVBO data;
+
+	for (size_t i = 0; i < g_indicesFaceBack.size(); ++i)
+		data.indices.push_back(g_indicesFaceBack[i] + (indicesIndex * g_vertexDataLength));
+
+	for (size_t i = 0; i < g_verticesBack.size(); ++i)
+		data.vertices.push_back(static_cast<int>(g_verticesBack[i]));
+
+	data.lightLevel = g_singleVBOLightLevelSide;
+
+	return data;
+}
+
+BlockMeshDataForSingleVBO getBlockFrontMeshDataForSingleVBO(int indicesIndex)
+{
+	BlockMeshDataForSingleVBO data;
+
+	for (size_t i = 0; i < g_indicesFaceFront.size(); ++i)
+		data.indices.push_back(g_indicesFaceFront[i] + (indicesIndex * g_vertexDataLength));
+
+	for (size_t i = 0; i < g_verticesFront.size(); ++i)
+		data.vertices.push_back(static_cast<int>(g_verticesFront[i]));
+
+	data.lightLevel = g_singleVBOLightLevelSide;
+
+	return data;
+}
+
+BlockMeshDataForSingleVBO getBlockLeftMeshDataForSingleVBO(int indicesIndex)
+{
+	BlockMeshDataForSingleVBO data;
+
+	for (size_t i = 0; i < g_indicesFaceLeft.size(); ++i)
+		data.indices.push_back(g_indicesFaceLeft[i] + (indicesIndex * g_vertexDataLength));
+
+	for (size_t i = 0; i < g_verticesLeft.size(); ++i)
+		data.vertices.push_back(static_cast<int>(g_verticesLeft[i]));
+
+	data.lightLevel = g_singleVBOLightLevelSide;
+
+	return data;
+}
+
+BlockMeshDataForSingleVBO getBlockRightMeshDataForSingleVBO(int indicesIndex)
+{
+	BlockMeshDataForSingleVBO data;
+
+	for (size_t i = 0; i < g_indicesFaceRight.size(); ++i)
+		data.indices.push_back(g_indicesFaceRight[i] + (indicesIndex * g_vertexDataLength));
+
+	for (size_t i = 0; i < g_verticesRight.size(); ++i)
+		data.vertices.push_back(static_cast<int>(g_verticesRight[i]));
+
+	data.lightLevel = g_singleVBOLightLevelSide;
+
+	return data;
+}
+
+BlockMeshDataForSingleVBO getBlockBottomMeshDataForSingleVBO(int indicesIndex)
+{
+	BlockMeshDataForSingleVBO data;
+
+	for (size_t i = 0; i < g_indicesFaceBottom.size(); ++i)
+		data.indices.push_back(g_indicesFaceBottom[i] + (indicesIndex * g_vertexDataLength));
+
+	for (size_t i = 0; i < g_verticesBottom.size(); ++i)
+		data.vertices.push_back(static_cast<int>(g_verticesBottom[i]));
+
+	data.lightLevel = g_singleVBOLightLevelBottom;
+
+	return data;
+}
+
+BlockMeshDataForSingleVBO getBlockTopMeshDataForSingleVBO(int indicesIndex)
+{
+	BlockMeshDataForSingleVBO data;
+
+	for (size_t i = 0; i < g_indicesFaceTop.size(); ++i)
+		data.indices.push_back(g_indicesFaceTop[i] + (indicesIndex * g_vertexDataLength));
+
+	for (size_t i = 0; i < g_verticesTop.size(); ++i)
+		data.vertices.push_back(static_cast<int>(g_verticesTop[i]));
+
+	data.lightLevel = g_singleVBOLightLevelTop;
+
+	return data;
 }
 
 

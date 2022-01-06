@@ -11,14 +11,14 @@ class BasicRenderer
 {
 public:
 
-	static BasicRenderer& get();
+	static BasicRenderer& get(bool singleVBOMode = false);
 
-	void draw(RenderContext& renderContext, glm::mat4& mvp, bool useDefaultShader = false);
-
+	void draw(RenderContext& renderContext, glm::mat4& mvp, glm::ivec2 chunkPos, bool useDefaultShader = false);
+    void draw(RenderContextSingleVBO& renderContext, glm::mat4& mvp, glm::ivec2 chunkPos, bool useDefaultShader = false);
 
 
 private:
-	BasicRenderer();
+	BasicRenderer(bool singleVBOMode);
 	BasicRenderer(const BasicRenderer& other) = delete;
 	BasicRenderer operator= (BasicRenderer& other) = delete;
 

@@ -52,9 +52,9 @@ enum FACES_TO_DISPLAY
 
 
 
-std::vector<GLfloat> inline getTextureCoordinates(glm::vec2 tilePos)
+std::deque<GLfloat> inline getTextureCoordinates(glm::vec2 tilePos)
 {
-	std::vector<GLfloat> coords(8);
+	std::deque<GLfloat> coords(8);
 
 	int x = tilePos.x;
 	int y = tilePos.y;
@@ -78,7 +78,7 @@ std::vector<GLfloat> inline getTextureCoordinates(glm::vec2 tilePos)
 }
 
 
-std::vector<GLfloat> inline getTexCoords(BLOCK_ID blockID, const unsigned char& face)
+std::deque<GLfloat> inline getTexCoords(BLOCK_ID blockID, const unsigned char& face)
 {
 	switch (blockID)
 	{
@@ -113,6 +113,70 @@ std::vector<GLfloat> inline getTexCoords(BLOCK_ID blockID, const unsigned char& 
 		break;
 	default:
 		return getTextureCoordinates(DEBUG_TILE);
+		break;
+	}
+}
+
+
+std::deque<int> inline getTextureCoordinatesForSingleVBO(glm::vec2 tilePos)
+{
+	std::deque<int> coords(8);
+
+	int x = tilePos.x;
+	int y = tilePos.y;
+
+	coords[0] = x;
+	coords[1] = y;
+
+	coords[2] = x + 1;
+	coords[3] = y;
+
+	coords[4] = x;
+	coords[5] = y + 1;
+
+	coords[6] = x + 1;
+	coords[7] = y + 1;
+
+
+	return coords;
+}
+
+
+std::deque<int> inline getTexCoordsForSingleVBO(BLOCK_ID blockID, const unsigned char& face)
+{
+	switch (blockID)
+	{
+	case BLOCK_ID::GRASS:
+		if (face & FACES_TO_DISPLAY::TOP)
+			return getTextureCoordinatesForSingleVBO(GRASS_TILE);
+		else if (face & FACES_TO_DISPLAY::BOTTOM)
+			return getTextureCoordinatesForSingleVBO(DIRT_TILE);
+		else
+			return getTextureCoordinatesForSingleVBO(GRASS_SIDE_TILE);
+		break;
+	case BLOCK_ID::DIRT:
+		return getTextureCoordinatesForSingleVBO(DIRT_TILE);
+		break;
+	case BLOCK_ID::STONE:
+		return getTextureCoordinatesForSingleVBO(STONE_TILE);
+		break;
+	case BLOCK_ID::SAND:
+		return getTextureCoordinatesForSingleVBO(SAND_TILE);
+		break;
+	case BLOCK_ID::WATER:
+		return getTextureCoordinatesForSingleVBO(WATER_TILE);
+		break;
+	case BLOCK_ID::TREE_TRUNK:
+		if (face & FACES_TO_DISPLAY::TOP || face & FACES_TO_DISPLAY::BOTTOM)
+			return getTextureCoordinatesForSingleVBO(TREE_TRUNK_TILE);
+		else
+			return getTextureCoordinatesForSingleVBO(TREE_TRUNK_SIDE_TILE);
+		break;
+	case BLOCK_ID::TREE_LEAVES:
+		return getTextureCoordinatesForSingleVBO(TREE_LEAVES_TILE);
+		break;
+	default:
+		return getTextureCoordinatesForSingleVBO(DEBUG_TILE);
 		break;
 	}
 }

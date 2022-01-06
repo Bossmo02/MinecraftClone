@@ -11,7 +11,7 @@
 
 
 
-Chunk::Chunk(int x, int z, int* worldSeed, int(*heightFunction)(int x, int z, int seed))
+Chunk::Chunk(int x, int z, int* worldSeed, int(*heightFunction)(int x, int z, int seed), bool singleVBO)
 {
 	// for chunks positioned in negative space
 	// you should pass in the most negative x and z coordiante
@@ -22,6 +22,7 @@ Chunk::Chunk(int x, int z, int* worldSeed, int(*heightFunction)(int x, int z, in
 	int zEnd = z + g_chunkWidthZ;
 
 	m_worldSeed = worldSeed;
+	m_singleVBOMode = singleVBO;
 
 	
 	// heightMap includes adjacent heights from nearby chunks
@@ -69,7 +70,7 @@ Chunk::Chunk(int x, int z, int* worldSeed, int(*heightFunction)(int x, int z, in
 			// add water blocks if height is at a certain threshhold
 			if (heightMap[currPos.x][currPos.y] <= g_waterLevel)
 			{
-				m_waterBlocks.push_back(std::make_unique<WaterBlock>(WaterBlock(globalPos.x, g_waterLevel, globalPos.y)));
+				m_waterBlocks.push_back(std::make_unique<WaterBlock>(WaterBlock(currPos.x, g_waterLevel, currPos.y)));
 			}
 
 
@@ -82,7 +83,7 @@ Chunk::Chunk(int x, int z, int* worldSeed, int(*heightFunction)(int x, int z, in
 
 				if (i == heightMap[currPos.x + 1][currPos.y + 1])
 				{
-					m_solidBlocks[currPos].addBlock(glm::vec3(globalPos.x, heightMap[currPos.x + 1][currPos.y + 1], globalPos.y), FACES_TO_DISPLAY::TOP);
+					m_solidBlocks[currPos].addBlock(glm::vec3(currPos.x, heightMap[currPos.x + 1][currPos.y + 1], currPos.y), FACES_TO_DISPLAY::TOP);
 					blockAdded = true;
 				}
 				else
@@ -90,22 +91,22 @@ Chunk::Chunk(int x, int z, int* worldSeed, int(*heightFunction)(int x, int z, in
 					// add other visible blocks in y-column
 					if (heightMap[currPos.x + 1][currPos.y + DIRECTION_BACK.z + 1] < i)
 					{
-						m_solidBlocks[currPos].addBlock(glm::vec3(globalPos.x, i, globalPos.y), 0);
+						m_solidBlocks[currPos].addBlock(glm::vec3(currPos.x, i, currPos.y), 0);
 						blockAdded = true;
 					}
 					if (heightMap[currPos.x + 1][currPos.y + DIRECTION_FRONT.z + 1] < i)
 					{
-						m_solidBlocks[currPos].addBlock(glm::vec3(globalPos.x, i, globalPos.y), 0);
+						m_solidBlocks[currPos].addBlock(glm::vec3(currPos.x, i, currPos.y), 0);
 						blockAdded = true;
 					}
 					if (heightMap[currPos.x + DIRECTION_LEFT.x + 1][currPos.y + 1] < i)
 					{
-						m_solidBlocks[currPos].addBlock(glm::vec3(globalPos.x, i, globalPos.y), 0);
+						m_solidBlocks[currPos].addBlock(glm::vec3(currPos.x, i, currPos.y), 0);
 						blockAdded = true;
 					}
 					if (heightMap[currPos.x + DIRECTION_RIGHT.x + 1][currPos.y + 1] < i)
 					{
-						m_solidBlocks[currPos].addBlock(glm::vec3(globalPos.x, i, globalPos.y), 0);
+						m_solidBlocks[currPos].addBlock(glm::vec3(currPos.x, i, currPos.y), 0);
 						blockAdded = true;
 					}
 				}
@@ -135,8 +136,17 @@ Chunk::Chunk(int x, int z, int* worldSeed, int(*heightFunction)(int x, int z, in
 		}
 	}
 
-	loadSolidMeshToRenderContext();
-	loadWaterMeshToRenderContext();
+	if (m_singleVBOMode)
+	{
+		loadSolidMeshToRenderContextSingleVBO();
+		loadWaterMeshToRenderContextSingleVBO();
+	}
+	else
+	{
+		loadSolidMeshToRenderContext();
+		loadWaterMeshToRenderContext();
+	}
+
 	// chunk meshes are send to the GPU in World.cpp
 }
 
@@ -155,16 +165,31 @@ Chunk::~Chunk()
 	m_solidBlocks.clear();
 }
 
-void Chunk::renderChunk(glm::mat4& mvp, float totalTime)
+void Chunk::renderChunk(glm::mat4& mvp, float totalTime, bool singleVBOMode)
 {
-	if (m_renderContextSolid.numOfIndices > 0)
+	if (m_singleVBOMode)
 	{
-		BasicRenderer::get().draw(m_renderContextSolid, mvp, true);
-	}
+		if (m_renderContextSolidSingleVBO.numOfIndices > 0)
+		{
+			BasicRenderer::get(singleVBOMode).draw(m_renderContextSolidSingleVBO, mvp, m_chunkPos, true);
+		}
 
-	if (m_renderContextWater.numOfIndices > 0)
+		if (m_renderContextWaterSingleVBO.numOfIndices > 0)
+		{
+			WaterRenderer::get(singleVBOMode).draw(m_renderContextWaterSingleVBO, mvp, m_chunkPos, totalTime, true);
+		}
+	}
+	else
 	{
-		WaterRenderer::get().draw(m_renderContextWater, mvp, totalTime, true);
+		if (m_renderContextSolid.numOfIndices > 0)
+		{
+			BasicRenderer::get(singleVBOMode).draw(m_renderContextSolid, mvp, m_chunkPos, true);
+		}
+
+		if (m_renderContextWater.numOfIndices > 0)
+		{
+			WaterRenderer::get(singleVBOMode).draw(m_renderContextWater, mvp, m_chunkPos, totalTime, true);
+		}
 	}
 }
 
@@ -180,12 +205,26 @@ void Chunk::resetRenderContext(bool deleteVao)
 
 void Chunk::sendRenderContextSolidToGPU()
 {
-	sendDataToGPU(&m_renderContextSolid);
+	if (m_singleVBOMode)
+	{
+		sendDataToGPU(&m_renderContextSolidSingleVBO);
+	}
+	else
+	{
+		sendDataToGPU(&m_renderContextSolid);
+	}
 }
 
 void Chunk::sendRenderContextWaterToGPU()
 {
-	sendDataToGPU(&m_renderContextWater);
+	if (m_singleVBOMode)
+	{
+		sendDataToGPU(&m_renderContextWaterSingleVBO);
+	}
+	else
+	{
+		sendDataToGPU(&m_renderContextWater);
+	}
 }
 
 // returns chunk positions of adjacent chunks if they got changed in the process of destrying a block
@@ -438,10 +477,8 @@ bool Chunk::posOnChunkEdge(int x, int z) const
 
 void Chunk::loadSolidMeshToRenderContext()
 {
-	// solid mesh --------------------------------------------
-	std::vector<BlockMeshData> allMeshData;
-	std::vector<int> numOfFacesPerBlock;
-	numOfFacesPerBlock.reserve(m_solidBlocks.size());
+	std::deque<BlockMeshData> allMeshData;
+	std::deque<int> numOfFacesPerBlock;
 
 	for (auto& kV : m_solidBlocks)
 	{
@@ -461,18 +498,18 @@ void Chunk::loadSolidMeshToRenderContext()
 				numOfFacesPerBlock.push_back(b->getNumOfFacesVisible());
 		}
 	}
-	// !solid mesh------------------------------------------------------
 
-	if(allMeshData.size() > 0 && numOfFacesPerBlock.size() > 0)
+	if (allMeshData.size() > 0 && numOfFacesPerBlock.size() > 0)
+	{
 		parseBlockDataToRenderContext(&m_renderContextSolid, allMeshData, numOfFacesPerBlock);
+	}
 
 }
 
 void Chunk::loadWaterMeshToRenderContext()
 {
-	std::vector<BlockMeshData> allMeshData;
-	std::vector<int> numOfFacesPerBlock;
-	numOfFacesPerBlock.reserve(m_waterBlocks.size());
+	std::deque<BlockMeshData> allMeshData;
+	std::deque<int> numOfFacesPerBlock;
 
 	for (auto& wB : m_waterBlocks)
 	{
@@ -493,5 +530,62 @@ void Chunk::loadWaterMeshToRenderContext()
 	if (allMeshData.size() > 0 && numOfFacesPerBlock.size() > 0)
 	{
 		parseBlockDataToRenderContext(&m_renderContextWater, allMeshData, numOfFacesPerBlock);
+	}
+}
+
+void Chunk::loadSolidMeshToRenderContextSingleVBO()
+{
+	std::deque<BlockMeshDataForSingleVBO> allMeshData;
+	std::deque<int> numOfFacesPerBlock;
+
+	for (auto& kV : m_solidBlocks)
+	{
+		for (auto& b : kV.second.blocks)
+		{
+			std::vector<BlockMeshDataForSingleVBO> blockMeshData = b->getVisibleMeshForSingleVBO();
+
+			for (auto& bFace : blockMeshData)
+			{
+				allMeshData.push_back(bFace);
+			}
+
+			// not visible blocks shouldn't be given to the RenderContextBuilder
+			// it doesn't expect a zero. 
+			// !!!---- Passing a zero will result in wrongly displayed blocks ----!!!
+			if (b->getNumOfFacesVisible() != 0)
+				numOfFacesPerBlock.push_back(b->getNumOfFacesVisible());
+		}
+	}
+
+	if (allMeshData.size() > 0 && numOfFacesPerBlock.size() > 0)
+	{
+		parseBlockDataToRenderContextSingleVBO(&m_renderContextSolidSingleVBO, allMeshData, numOfFacesPerBlock);
+	}
+}
+
+void Chunk::loadWaterMeshToRenderContextSingleVBO()
+{
+	std::deque<BlockMeshDataForSingleVBO> allMeshData;
+	std::deque<int> numOfFacesPerBlock;
+
+	for (auto& wB : m_waterBlocks)
+	{
+		std::vector<BlockMeshDataForSingleVBO> blockMeshData = wB->getVisibleMeshForSingleVBO();
+
+		for (auto& bFace : blockMeshData)
+		{
+			allMeshData.push_back(bFace);
+		}
+
+		// not visible blocks shouldn't be given to the RenderContextBuilder
+		// it doesn't expect a zero. 
+		// !!!---- Passing a zero will result in wrongly displayed blocks ----!!!
+		if (wB->getNumOfFacesVisible() != 0)
+			numOfFacesPerBlock.push_back(wB->getNumOfFacesVisible());
+	}
+
+	if (allMeshData.size() > 0 && numOfFacesPerBlock.size() > 0)
+	{
+		parseBlockDataToRenderContextSingleVBO(&m_renderContextWaterSingleVBO, allMeshData, numOfFacesPerBlock);
 	}
 }

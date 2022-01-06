@@ -11,14 +11,14 @@ class WaterRenderer
 {
 public:
 
-    static WaterRenderer& get();
+    static WaterRenderer& get(bool singleVBOMode = false);
 
-    void draw(RenderContext& renderContext, glm::mat4& mvp, float totalTime, bool useDefaultShader = false);
-
+    void draw(RenderContext& renderContext, glm::mat4& mvp, glm::ivec2 chunkPos, float totalTime, bool useDefaultShader = false);
+    void draw(RenderContextSingleVBO& renderContext, glm::mat4& mvp, glm::ivec2 chunkPos, float totalTime, bool useDefaultShader = false);
 
 
 private:
-    WaterRenderer();
+    WaterRenderer(bool singleVBOMode);
     WaterRenderer(const WaterRenderer& other) = delete;
     WaterRenderer operator= (WaterRenderer& other) = delete;
 

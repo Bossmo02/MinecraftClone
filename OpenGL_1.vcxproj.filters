@@ -1259,5 +1259,7 @@
     <None Include="src\shader\Default.vert" />
     <None Include="Src\Shader\DefaultWater.vert" />
     <None Include="Src\Shader\DefaultWater.frag" />
+    <None Include="Src\Shader\DefaultSingleVBO.vert" />
+    <None Include="Src\Shader\DefaultWaterSingleVBO.vert" />
   </ItemGroup>
 </Project>

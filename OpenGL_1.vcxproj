@@ -438,6 +438,7 @@
     <ClInclude Include="Src\World\Blocks\WaterBlock.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Src\Shader\DefaultSingleVBO.vert" />
     <None Include="Src\Shader\DefaultWater.frag" />
     <None Include="Src\Shader\DefaultWater.vert" />
     <None Include="src\shader\Default.vert" />
@@ -574,6 +575,7 @@
     <None Include="Dependencies\Include\glm\gtx\vector_angle.inl" />
     <None Include="Dependencies\Include\glm\gtx\vector_query.inl" />
     <None Include="Dependencies\Include\glm\gtx\wrap.inl" />
+    <None Include="Src\Shader\DefaultWaterSingleVBO.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

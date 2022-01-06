@@ -21,18 +21,19 @@ public:
 	const BLOCK_ID getBlockType();
 
 	std::vector<BlockMeshData> getVisibleMesh(float scale = 1);
+	std::vector<BlockMeshDataForSingleVBO> getVisibleMeshForSingleVBO(float scale = 1);
 
 
 protected:
 
-	glm::vec3 m_worldPos;
+	glm::vec<3, int8_t> m_posInChunk;
 
 private:
 
-	void setVerticesToWorldPosScaled(float scale, std::vector<GLfloat>& verts);
-	void setVerticesToWorldPos(std::vector<GLfloat>& verts);
+	void setVerticesToChunkPosScaled(float scale, std::deque<GLfloat>& verts);
+	void setVerticesToChunkPosScaled(float scale, std::deque<int>& verts);
+	void setVerticesToChunkPos(std::deque<GLfloat>& verts);
 
-	
 	BLOCK_ID m_blockID;
 
 	unsigned char m_visibleFaces;

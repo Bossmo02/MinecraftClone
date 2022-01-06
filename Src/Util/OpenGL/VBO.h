@@ -28,6 +28,15 @@ public:
 		glBufferData(GL_ARRAY_BUFFER, size, data, usage);
 	}
 
+	void sendData(GLuint* data, GLsizeiptr size, GLenum usage)
+	{
+		if (ID == 0)
+			glGenBuffers(1, &ID);
+
+		bindVBO();
+		glBufferData(GL_ARRAY_BUFFER, size, data, usage);
+	}
+
 	void bindVBO()
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, ID);

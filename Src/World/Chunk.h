@@ -27,10 +27,10 @@ class Chunk
 {
 public:
 
-	Chunk(int x, int z, int* worldSeed, int(*heightFunction)(int x, int z, int seed));
+	Chunk(int x, int z, int* worldSeed, int(*heightFunction)(int x, int z, int seed), bool singleVBO);
 	~Chunk();
 
-	void renderChunk(glm::mat4& mvp, float totalTime);
+	void renderChunk(glm::mat4& mvp, float totalTime, bool singleVBOMode);
 
 	void reloadMesh();
     void resetRenderContext(bool deleteVao);
@@ -54,6 +54,9 @@ public:
 	RenderContext m_renderContextSolid;
     RenderContext m_renderContextWater;
 
+    RenderContextSingleVBO m_renderContextSolidSingleVBO;
+    RenderContextSingleVBO m_renderContextWaterSingleVBO;
+
 private:
 
 	void fillSpaceWith(int xStart, int zStart, int xEnd, int zEnd, int height, BLOCK_ID typeID);
@@ -64,6 +67,11 @@ private:
     glm::ivec2 updateNearbyBlock(ChunkPiece* cPiece, glm::vec3 pos, unsigned char facesToDisplay);
 	void loadSolidMeshToRenderContext();
     void loadWaterMeshToRenderContext();
+
+    void loadSolidMeshToRenderContextSingleVBO();
+    void loadWaterMeshToRenderContextSingleVBO();
+
+    bool m_singleVBOMode;
 
     // visible blocks are stored in these containers
 	std::unordered_map<glm::ivec2, ChunkPiece, IVec2Hasher> m_solidBlocks;

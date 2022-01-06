@@ -5,9 +5,9 @@
 
 #include <deque>
 
-const int g_minChunkHeight = -40;
+const int g_minChunkHeight = -127;
 const int g_waterLevel = 0;
-
+const int g_maxHeight = 127;
 
 struct ChunkPiece
 {

@@ -12,7 +12,7 @@
 class World
 {
 public:
-	World(int seed, Camera* cam);
+	World(int seed, Camera* cam, bool singleVBOMode);
 	World(int seed, Camera* cam, int(*heightFunction)(int x, int z, int seed));
 	~World();
 	
@@ -21,7 +21,7 @@ public:
 	void updateChunksAroundCam();
 	void updateChunkdrawingOrder(glm::vec3 camPos);
 	void updateFutures();
-	void draw(glm::mat4& mvp, float totalTime);
+	void render(glm::mat4& mvp, float totalTime);
 
 
 	void destroyBlock();
@@ -42,6 +42,7 @@ private:
 	int(*m_heightFunction)(int x, int z, int seed);
 	FastNoiseLite m_noise;
 	Camera* m_cam;
+	bool m_useSingleVBOMode;
 
 #ifdef _DEBUG
 	int m_maxLoadChunkDistance = 2;
@@ -49,9 +50,9 @@ private:
 	int m_maxLoadChunkDistance = 15;
 #endif // !_DEBUG
 
-	int m_maxChunksLoadingCount = 20;
-	int m_maxChunkAddPerIter = 5;
-	int m_distanceToDelete = 16 * g_chunkWidthX;
+	int m_maxChunksLoadingCount = 20000000;
+	int m_maxChunkAddPerIter = 5000;
+	int m_distanceToDelete = m_maxLoadChunkDistance * g_chunkWidthX + 1;
 
 	// heigher values cause lags. Sending data to the GPU is slow
 	int m_maxChunkToGPULoads = 3000000;
