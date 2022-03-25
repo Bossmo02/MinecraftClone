@@ -14,7 +14,6 @@ public:
     static WaterRenderer& get(bool singleVBOMode = false);
 
     void draw(RenderContext& renderContext, glm::mat4& mvp, glm::ivec2 chunkPos, float totalTime, bool useDefaultShader = false);
-    void draw(RenderContextSingleVBO& renderContext, glm::mat4& mvp, glm::ivec2 chunkPos, float totalTime, bool useDefaultShader = false);
 
 
 private:

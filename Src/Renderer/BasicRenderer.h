@@ -13,8 +13,7 @@ public:
 
 	static BasicRenderer& get(bool singleVBOMode = false);
 
-	void draw(RenderContext& renderContext, glm::mat4& mvp, glm::ivec2 chunkPos, bool useDefaultShader = false);
-    void draw(RenderContextSingleVBO& renderContext, glm::mat4& mvp, glm::ivec2 chunkPos, bool useDefaultShader = false);
+	void draw(RenderContext& renderContext, glm::mat4& mvp, glm::ivec2 chunkPos, bool useDefaultShader = false, bool highlightChunk = false);
 
 
 private:

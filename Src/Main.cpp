@@ -22,6 +22,15 @@
 
 
 
+
+void* operator new(size_t size)
+{
+	return malloc(size);
+}
+
+
+
+
 float deltaTime = 0;
 float lastTime = 0;
 float scale = 1;
@@ -209,7 +218,7 @@ int main()
 	//Creating Buffers
 
 	
-	world = new World(2, &cam, true);
+	world = new World(2, &cam);
 
 
 	//VAO firstVao;
@@ -295,7 +304,7 @@ int main()
 
 		glm::mat4 mvp = projection * cam.getViewMatrix() * model;
 
-		world->render(mvp, lastTime);
+		world->render(mvp, passedTime);
 
 
 		//// create transformations
@@ -321,6 +330,8 @@ int main()
 
 	glfwTerminate();
 
+	return 0;
+
 
 }//---------------------------------------
 // main end
@@ -336,10 +347,7 @@ void handleInput(GLFWwindow* window)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	if (glfwGetKey(window, GLFW_KEY_F1) == GLFW_PRESS)
-		fov -= 0.1f;
-	if (glfwGetKey(window, GLFW_KEY_F2) == GLFW_PRESS)
-		fov += 0.1f;
+
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		cam.moveRelativeToCamFront(CAMERA_MOVEMENT_DIR::FORWARD, deltaTime * currentSpeedMulti);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -360,7 +368,10 @@ void handleInput(GLFWwindow* window)
 
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)
 		world->destroyBlock();
-
+	if (glfwGetKey(window, GLFW_KEY_F1) == GLFW_PRESS)
+		world->resetHighlighting();
+	if (glfwGetKey(window, GLFW_KEY_F2) == GLFW_PRESS)
+		world->reloadAllChunks();
 }
 
 

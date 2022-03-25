@@ -127,7 +127,7 @@ public:
         }
 
 #ifdef _DEBUG
-        std::cout << "Cam-Pos: X: " << m_camPos.x << "  Y: " << m_camPos.y << "  Z: " << m_camPos.z << "\n";
+        //std::cout << "Cam-Pos: X: " << m_camPos.x << "  Y: " << m_camPos.y << "  Z: " << m_camPos.z << "\n";
 #endif // _DEBUG
 
         

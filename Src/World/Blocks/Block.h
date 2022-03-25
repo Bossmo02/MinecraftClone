@@ -16,17 +16,17 @@ public:
 	void setFaceVisible(unsigned char dir);
 	void setFaceHidden(unsigned char dir);
 	int getNumOfFacesVisible() const;
-	const glm::ivec3 getWorldPos() const;
+	const glm::vec3 getWorldPos() const;
 	bool isFaceVisible(unsigned char dir) const;
 	const BLOCK_ID getBlockType();
 
 	std::vector<BlockMeshData> getVisibleMesh(float scale = 1);
-	std::vector<BlockMeshDataForSingleVBO> getVisibleMeshForSingleVBO(float scale = 1);
 
 
 protected:
 
-	glm::vec<3, int8_t> m_posInChunk;
+	glm::vec<2, int8_t> m_posInChunk;
+	float m_yPos;
 
 private:
 

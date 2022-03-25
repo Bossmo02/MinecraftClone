@@ -13,13 +13,15 @@ uniform vec2 u_chunkPos;
 #define PI 3.1415926535897932384626433832795
 
 
+
 void main()
 {
 	float newXPos = inVertexPos.x + u_chunkPos.x;
 	float newZPos = inVertexPos.z + u_chunkPos.y;
 
+	float newYPos = inVertexPos.y + 0.15 * sin(u_time);
 
-	gl_Position = u_mvp * vec4(newXPos, inVertexPos.y, newZPos, 1.0);
+	gl_Position = u_mvp * vec4(newXPos, newYPos, newZPos, 1.0);
 	textureCoordinates = inTexCoords;
 
 	lightLevel = 1.0;

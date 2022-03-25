@@ -1,5 +1,5 @@
 #ifndef WORLD_HPP
-#define WORLD_HPP
+#define WOLRD_HPP
 
 #include "Chunk.h"
 #include "../Util/OpenGL/Camera.h"
@@ -12,10 +12,10 @@
 class World
 {
 public:
-	World(int seed, Camera* cam, bool singleVBOMode);
+	World(int seed, Camera* cam);
 	World(int seed, Camera* cam, int(*heightFunction)(int x, int z, int seed));
 	~World();
-	
+
 	void update(glm::vec3 camPos);
 
 	void updateChunksAroundCam();
@@ -26,6 +26,10 @@ public:
 
 	void destroyBlock();
 	void deleteFurthestChunks();
+
+	// DEBUG
+	void resetHighlighting();
+	void reloadAllChunks();
 
 
 private:
@@ -42,22 +46,21 @@ private:
 	int(*m_heightFunction)(int x, int z, int seed);
 	FastNoiseLite m_noise;
 	Camera* m_cam;
-	bool m_useSingleVBOMode;
 
 #ifdef _DEBUG
-	int m_maxLoadChunkDistance = 2;
+	int m_maxLoadChunkDistance = 3;
 #else
 	int m_maxLoadChunkDistance = 15;
 #endif // !_DEBUG
 
-	int m_maxChunksLoadingCount = 20000000;
-	int m_maxChunkAddPerIter = 5000;
-	int m_distanceToDelete = m_maxLoadChunkDistance * g_chunkWidthX + 1;
+	int m_maxChunksLoadingCount = 30;
+	int m_maxChunkAddPerIter = 3;
+	int m_distanceToDelete = m_maxLoadChunkDistance + 2;
 
 	// heigher values cause lags. Sending data to the GPU is slow
 	int m_maxChunkToGPULoads = 3000000;
-	
-	
+
+
 	int m_seed;
 
 

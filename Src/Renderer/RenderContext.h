@@ -50,36 +50,6 @@ struct RenderContext
 	}
 };
 
-struct RenderContextSingleVBO
-{
-	VAO vertexArray;
-	VBO allVertexData;
-	EBO indicesData;
-	Shader shader;
-
-	unsigned int numOfIndices = 0;
-
-	std::vector<GLuint> vec_indicesData;
-
-	// includes x, y, z coords, texIndexCoords, light
-	std::vector<GLuint> vec_allVertexData;
-
-	void deleteContextData(bool deleteVAO)
-	{
-		if (deleteVAO)
-			vertexArray.deleteVAO();
-
-		allVertexData.deleteVBO();
-		indicesData.deleteEBO();
-		shader.deleteShader();
-
-		vec_indicesData.clear();
-		std::vector<GLuint>().swap(vec_indicesData);
-		vec_allVertexData.clear();
-		std::vector<GLuint>().swap(vec_allVertexData);
-	}
-};
-
 
 
 #endif // !RENDER_CONTEXT_HPP

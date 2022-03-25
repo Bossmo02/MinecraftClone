@@ -1,12 +1,14 @@
 #include "World.h"
 
 
+
+
 //---------------
 // Functions used for multithreading
 
-Chunk* loadChunkAsync(int x, int z, int* seed, int(*heightFunction)(int x, int z, int seed), bool singleVBOMode)
+Chunk* loadChunkAsync(int x, int z, int* seed, int(*heightFunction)(int x, int z, int seed))
 {
-	Chunk* c = new Chunk(x, z, seed, heightFunction, singleVBOMode);
+	Chunk* c = new Chunk(x, z, seed, heightFunction);
 
 	return c;
 }
@@ -17,7 +19,7 @@ Chunk* loadChunkAsync(int x, int z, int* seed, int(*heightFunction)(int x, int z
 // standart heightfunction
 
 #ifdef _DEBUG
-	float highest = -1, lowest = 1;
+float highest = -1, lowest = 1;
 #endif // _DEBUG
 
 int defaultHeightFunction(int x, int z, int seed)
@@ -54,21 +56,21 @@ int defaultHeightFunction(int x, int z, int seed)
 #endif // !_DEBUG
 
 	temp2 = temp1 * 20;
-	
-	//return (int)(temp2);
-	return 0;
+
+	return (int)(temp2);
 }
 //-----------------------------------------------------------------------
 
 
-World::World(int seed, Camera* cam, bool singleVBOMode)
+World::World(int seed, Camera* cam)
 {
 	m_noise.SetSeed(seed);
 	m_cam = cam;
 	m_seed = seed;
-	m_useSingleVBOMode = singleVBOMode;
 
 	m_heightFunction = defaultHeightFunction;
+
+	m_oldChunkPos = glm::ivec2(0, 0);
 
 	updateChunksAroundCam();
 }
@@ -80,6 +82,8 @@ World::World(int seed, Camera* cam, int(*heightFunction)(int x, int z, int seed)
 	m_seed = seed;
 
 	m_heightFunction = heightFunction;
+
+	m_oldChunkPos = glm::ivec2(0, 0);
 
 	updateChunksAroundCam();
 }
@@ -95,7 +99,7 @@ World::~World()
 void World::update(glm::vec3 camPos)
 {
 	updateChunksAroundCam();
-	
+
 	updateFutures();
 
 	updateChunkdrawingOrder(camPos);
@@ -129,16 +133,18 @@ void World::updateChunksAroundCam()
 				// check if chunk is loaded
 				if (!m_chunks.contains(currChunk) && !loading && timesChunkAdded < m_maxChunkAddPerIter)
 				{
-					m_chunkFutures.push_back(std::pair<glm::ivec2, std::future<Chunk*>>(currChunk, std::async(std::launch::async, loadChunkAsync, currChunk.x, currChunk.y, &m_seed, m_heightFunction, m_useSingleVBOMode)));
+					std::cout << "Chunk futures: " << m_chunkFutures.size() << "\n";
+					m_chunkFutures.push_back(std::pair<glm::ivec2, std::future<Chunk*>>(currChunk, std::async(std::launch::async, loadChunkAsync, currChunk.x, currChunk.y, &m_seed, m_heightFunction)));
 					timesChunkAdded++;
 				}
 			}
 		}
 
 		// did the player move into another chunk?
-		if (m_oldChunkPos.x != currChunk.x && m_oldChunkPos.y != currChunk.y)
+		if (m_oldChunkPos.x != currChunk.x || m_oldChunkPos.y != currChunk.y)
 		{
 			deleteFurthestChunks();
+
 			m_oldChunkPos.x = currChunk.x;
 			m_oldChunkPos.y = currChunk.y;
 		}
@@ -155,8 +161,8 @@ bool compareChunkDistances(const std::pair<float, Chunk*>& c1, const std::pair<f
 float dist(const glm::vec3& p1, const glm::vec3 p2)
 {
 	return std::sqrt(std::pow(p2.x - p1.x, 2) +
-					 std::pow(p2.y - p1.y, 2) +
-					 std::pow(p2.z - p1.z, 2));
+		std::pow(p2.y - p1.y, 2) +
+		std::pow(p2.z - p1.z, 2));
 }
 
 void World::updateChunkdrawingOrder(glm::vec3 camPos)
@@ -188,11 +194,6 @@ void World::updateFutures()
 			m_chunks[c->getWorldPosXZ()] = c;
 			m_chunkFutures.erase(m_chunkFutures.begin() + i);
 			count++;
-
-#ifdef _DEBUG
-			std::cout << highest << "\t" << lowest << "\n";
-#endif // !_DEBUG
-
 		}
 
 		if (count >= m_maxChunkToGPULoads)
@@ -204,7 +205,7 @@ void World::render(glm::mat4& mvp, float totalTime)
 {
 	for (size_t i = 0; i < m_sortedChunks.size(); i++)
 	{
-		m_sortedChunks[i].second->renderChunk(mvp, totalTime, m_useSingleVBOMode);
+		m_sortedChunks[i].second->renderChunk(mvp, totalTime);
 	}
 }
 
@@ -230,7 +231,7 @@ void World::destroyBlock()
 				glm::ivec3 blockPos = chunkPiece->blocks[j]->getWorldPos();
 				if (pos.y > blockPos.y && pos.y < blockPos.y + 1.f)
 				{
-					// gather adjacent chunks
+					// get adjacent chunks
 					std::vector<Chunk*> adjacentChunks;
 					adjacentChunks.push_back(m_chunks[glm::ivec2(chunkPos.x - 32, chunkPos.y)]);
 					adjacentChunks.push_back(m_chunks[glm::ivec2(chunkPos.x + 32, chunkPos.y)]);
@@ -239,6 +240,7 @@ void World::destroyBlock()
 
 					std::vector<glm::ivec2> chunksToUpdate = m_chunks[chunkPos]->deleteBlock(blockPos, j, &adjacentChunks);
 					chunksToUpdate.push_back(chunkPos);
+
 
 					for (auto& c : chunksToUpdate)
 					{
@@ -260,8 +262,11 @@ void World::deleteFurthestChunks()
 
 	for (auto& c : m_chunks)
 	{
-		float xDiff = std::abs(m_cam->getCamPos().x - c.first.x);
-		float zDiff = std::abs(m_cam->getCamPos().z - c.first.y);
+		glm::ivec2 camChunkPos = translateGlobalPosToChunkIndex(glm::vec3(m_cam->getCamPos().x, 0, m_cam->getCamPos().z), g_chunkWidthX, g_chunkWidthZ);
+		glm::ivec2 chunkIndex = translateGlobalPosToChunkIndex(glm::vec3(c.first.x, 0, c.first.y), g_chunkWidthX, g_chunkWidthZ);
+
+		int xDiff = std::abs(camChunkPos.x - chunkIndex.x);
+		int zDiff = std::abs(camChunkPos.y - chunkIndex.y);
 
 		if (xDiff >= m_distanceToDelete || zDiff >= m_distanceToDelete)
 		{
@@ -271,14 +276,31 @@ void World::deleteFurthestChunks()
 
 			positionsToDelete.push_back(c.first);
 		}
-	}	
+	}
 
 	for (size_t i = 0; i < positionsToDelete.size(); ++i)
 	{
+		delete m_chunks[positionsToDelete[i]];
 		m_chunks.erase(positionsToDelete[i]);
 	}
 }
 
+void World::resetHighlighting()
+{
+	for (auto& c : m_chunks)
+	{
+		c.second->setHighlighting(false);
+	}
+}
+
+void World::reloadAllChunks()
+{
+	for (auto& c : m_chunks)
+	{
+		delete c.second;
+	}
+	m_chunks.clear();
+}
 
 
 

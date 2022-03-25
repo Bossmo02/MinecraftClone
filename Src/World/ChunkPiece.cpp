@@ -8,7 +8,7 @@ void ChunkPiece::setup()
     usedBlockPositions.push_back((short)height + 1);
 }
 
-int ChunkPiece::searchForBlock(unsigned int y) const
+int ChunkPiece::searchForBlock(int y) const
 {
     // returns the index of the block at given height
     for (int i = 0; i < blocks.size(); ++i)
@@ -22,7 +22,7 @@ int ChunkPiece::searchForBlock(unsigned int y) const
 
 void ChunkPiece::addBlock(glm::vec3 pos, unsigned char visibleFaces)
 {
-    if (!blockPosUsed(pos.y))
+    if (!blockPosUsed((short)pos.y))
     {
         if (pos.y == height && height > g_waterLevel)
         {
@@ -51,7 +51,7 @@ bool ChunkPiece::blockPosUsed(short y)
 {
     for (size_t i = 0; i < usedBlockPositions.size(); ++i)
     {
-        if (usedBlockPositions[i] == (short)y)
+        if (usedBlockPositions[i] == y)
         {
             return true;
         }

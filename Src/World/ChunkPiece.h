@@ -15,12 +15,12 @@ struct ChunkPiece
 
     // uses a lot of memory when a lot of blocks were destroyed
     std::deque<short> usedBlockPositions;
-   
+
 
     short height, stoneHeight;
 
     void setup();
-    int searchForBlock(unsigned int y) const;
+    int searchForBlock(int y) const;
     void addBlock(glm::vec3 pos, unsigned char visibleFaces);
     bool blockPosUsed(short y);
     void deleteBlock(size_t index);
