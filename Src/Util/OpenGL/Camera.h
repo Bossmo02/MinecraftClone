@@ -24,7 +24,7 @@ class Camera
 public:
 
 	Camera(glm::vec3 camPos, glm::vec3 camFront, float camSpeed, CAMERA_TYPES camType)	: m_camPos(camPos), m_camFront(camFront), m_camUp(glm::vec3(0.0f, 1.0f, 0.0f)), m_camSpeed(camSpeed), m_camType(camType) {}
-    Camera() : m_camPos(glm::vec3(0.0f, 120.0f, 0.0f)), m_camFront(glm::vec3(1.0f, 0.0f, 0.0f)), m_camUp(glm::vec3(0.0f, 1.0f, 0.0f)), m_camType(CAMERA_TYPES::CAM_FP) {}
+    Camera() : m_camPos(glm::vec3(0.0f, 120.0f, 0.0f)), m_camFront(glm::vec3(1.0f, 0.0f, 0.0f)), m_camUp(glm::vec3(0.0f, 1.0f, 0.0f)), m_camType(CAMERA_TYPES::CAM_FLY) {}
 
 	void mouseMovement(double xPos, double yPos)
 	{
@@ -133,19 +133,30 @@ public:
         
     }
 
-    glm::vec3 castRay(float multi) const
+
+    void setCamPos(const glm::vec3 pos)
+    {
+        m_camPos = pos;
+    }
+
+    glm::vec3 castRay(const float multi)
     {
         return m_camPos + (multi * m_camFront);
     }
 
-	const glm::mat4 getViewMatrix() const
+	const glm::mat4 getViewMatrix()
 	{
 		return glm::lookAt(m_camPos, m_camPos + m_camFront, m_camUp);
 	}
 
-    const glm::vec3 getCamPos() const 
+    const glm::vec3 getCamPos() 
     {
         return m_camPos;
+    }
+
+    glm::vec3 getCamFront()
+    {
+        return m_camFront;
     }
 
 private:

@@ -13,11 +13,11 @@ struct ChunkPiece
 {
     std::deque<std::unique_ptr<Block>> blocks;
 
-    // uses a lot of memory when a lot of blocks were destroyed
+    // uses a lot of memory when a lot of blocks have been destroyed
     std::deque<short> usedBlockPositions;
 
 
-    short height, stoneHeight;
+    short height, stoneHeight, maxHeight;
 
     void setup();
     int searchForBlock(int y) const;

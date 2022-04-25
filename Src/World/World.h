@@ -2,37 +2,44 @@
 #define WOLRD_HPP
 
 #include "Chunk.h"
+#include "../Util/OpenGL/Texture.h"
 #include "../Util/OpenGL/Camera.h"
 #include "Gen/IVec2Hasher.h"
 #include "../Util/HelperFunctions.h"
 
 #include <stack>
-
+#include <array>
 
 class World
 {
 public:
-	World(int seed, Camera* cam);
-	World(int seed, Camera* cam, int(*heightFunction)(int x, int z, int seed));
+	World(int seed);
+	World(int seed, int(*heightFunction)(int x, int z, int seed));
 	~World();
 
 	void update(glm::vec3 camPos);
-
-	void updateChunksAroundCam();
-	void updateChunkdrawingOrder(glm::vec3 camPos);
-	void updateFutures();
+		
 	void render(glm::mat4& mvp, float totalTime);
 
+	void destroyBlock(Camera* cam);
 
-	void destroyBlock();
-	void deleteFurthestChunks();
-
-	// DEBUG
+	// DEBUG -----------
 	void resetHighlighting();
 	void reloadAllChunks();
+	// -----------------
 
+	std::array<glm::vec3, 5> getHeightsNearPos(glm::vec3 pos);
+	std::array<glm::vec3, 10> getBlockPositionsAroundPlayerPos(glm::vec3 pos);
+
+	bool isLoadingChunks();
+	float getHeightestPointAt(glm::vec3 pos);
 
 private:
+
+	void updateChunksAroundCam(glm::vec3 camPos);
+	void updateChunkdrawingOrder(glm::vec3 camPos);
+	void deleteFurthestChunks(glm::vec3 camPos);
+	void updateFutures();
 
 	glm::ivec2 m_oldChunkPos;
 	std::unordered_map<glm::ivec2, Chunk*, IVec2Hasher> m_chunks;
@@ -45,16 +52,16 @@ private:
 
 	int(*m_heightFunction)(int x, int z, int seed);
 	FastNoiseLite m_noise;
-	Camera* m_cam;
+	Texture m_texture;
 
 #ifdef _DEBUG
-	int m_maxLoadChunkDistance = 3;
+	int m_maxLoadChunkDistance = 2;
 #else
-	int m_maxLoadChunkDistance = 15;
+	int m_maxLoadChunkDistance = 6;
 #endif // !_DEBUG
 
 	int m_maxChunksLoadingCount = 30;
-	int m_maxChunkAddPerIter = 3;
+	int m_maxChunkAddPerIter = 30;
 	int m_distanceToDelete = m_maxLoadChunkDistance + 2;
 
 	// heigher values cause lags. Sending data to the GPU is slow

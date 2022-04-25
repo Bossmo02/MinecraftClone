@@ -11,7 +11,7 @@
 
 
 
-Chunk::Chunk(int x, int z, int* worldSeed, int(*heightFunction)(int x, int z, int seed))
+Chunk::Chunk(int x, int z, int worldSeed, int(*heightFunction)(int x, int z, int seed))
 {
 	// for chunks positioned in negative space
 	// you should pass in the most negative x and z coordiante
@@ -40,7 +40,7 @@ Chunk::Chunk(int x, int z, int* worldSeed, int(*heightFunction)(int x, int z, in
 		for (int j = m_chunkPos.y; j < zEnd; ++j)
 		{
 			glm::ivec2 localPos = translateGlobalToLocalCoords(glm::ivec2(i, j), g_chunkWidthX, g_chunkWidthZ);
-			heightMap[localPos.x + 1][localPos.y + 1] = heightFunction((float)i, (float)j, *m_worldSeed);
+			heightMap[localPos.x + 1][localPos.y + 1] = heightFunction(i, j, m_worldSeed);
 
 			m_solidBlocks[localPos].height = heightMap[localPos.x + 1][localPos.y + 1];
 			m_solidBlocks[localPos].stoneHeight = heightMap[localPos.x + 1][localPos.y + 1] - Random::get().getInt(3, 5);
@@ -54,7 +54,7 @@ Chunk::Chunk(int x, int z, int* worldSeed, int(*heightFunction)(int x, int z, in
 		{
 			if (i == -1 || j == -1 || i == g_chunkWidthX || j == g_chunkWidthZ)
 			{
-				heightMap[i + 1][j + 1] = heightFunction((float)(m_chunkPos.x + i), (float)(m_chunkPos.y + j), *m_worldSeed);
+				heightMap[i + 1][j + 1] = heightFunction((m_chunkPos.x + i), (m_chunkPos.y + j), m_worldSeed);
 			}
 		}
 	}

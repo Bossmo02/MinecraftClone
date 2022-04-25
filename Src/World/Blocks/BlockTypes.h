@@ -27,9 +27,13 @@
 #define TREE_TRUNK_SIDE_TILE glm::vec2(1, 9)
 #define TREE_LEAVES_TILE glm::vec2(4, 1)
 
+// used for collision detection
+#define BLOCK_NOTHING glm::vec3(0.69f, 0, 0)
+
 
 enum class BLOCK_ID
 {
+	NONE = -1,
 	GRASS = 0,
 	DIRT,
 	STONE,

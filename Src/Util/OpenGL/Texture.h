@@ -10,8 +10,9 @@ class Texture
 {
 public:
 	GLuint ID;
+	GLenum slot;
 
-	Texture(GLenum textureType, GLenum slot, const char* texPath);
+	Texture(GLenum textureType, GLenum textureSlot, const char* texPath, bool flip = true, GLint filter = GL_NEAREST);
 	~Texture();
 
 	void setTextParameterI(GLenum paramName, GLint param);
@@ -23,7 +24,6 @@ public:
 
 private:
 	GLenum m_type;
-
 };
 
 

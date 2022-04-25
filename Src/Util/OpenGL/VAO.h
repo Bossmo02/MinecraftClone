@@ -45,7 +45,11 @@ public:
 
 	void deleteVAO()
 	{
-		glDeleteVertexArrays(1, &ID);
+		if (ID != 0)
+		{
+			glDeleteVertexArrays(1, &ID);
+			ID = 0;
+		}
 	}
 
 };

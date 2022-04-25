@@ -10,13 +10,14 @@ class Block
 {
 public:
 
+	Block() = default;
 	Block(float x, float y, float z, BLOCK_ID id);
 	Block(float x, float y, float z, BLOCK_ID id, unsigned char dir);
 
 	void setFaceVisible(unsigned char dir);
 	void setFaceHidden(unsigned char dir);
 	int getNumOfFacesVisible() const;
-	const glm::vec3 getWorldPos() const;
+	const glm::vec3 getLocalPos() const;
 	bool isFaceVisible(unsigned char dir) const;
 	const BLOCK_ID getBlockType();
 

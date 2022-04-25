@@ -154,6 +154,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Src\Player\Player.cpp" />
     <ClCompile Include="Src\Renderer\WaterRenderer.cpp" />
     <ClCompile Include="Src\World\ChunkPiece.cpp" />
     <ClCompile Include="Dependencies\Include\glm\detail\glm.cpp" />
@@ -168,8 +169,10 @@
     <ClCompile Include="src\World\Chunk.cpp" />
     <ClCompile Include="Src\World\World.cpp" />
     <ClCompile Include="Src\World\Blocks\WaterBlock.cpp" />
+    <ClCompile Include="Src\Util\UI\UI.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Src\Player\Player.h" />
     <ClInclude Include="Src\Renderer\WaterRenderer.h" />
     <ClInclude Include="Src\World\ChunkPiece.h" />
     <ClInclude Include="Src\Util\HelperFunctions.h" />
@@ -422,6 +425,7 @@
     <ClInclude Include="src\World\Blocks\Block.h" />
     <ClInclude Include="Src\Renderer\RenderContext.h" />
     <ClInclude Include="Src\World\Gen\IVec2Hasher.h" />
+    <ClInclude Include="Src\Util\UI\UI.h" />
     <ClInclude Include="Util\ImageLoader.h" />
     <ClInclude Include="src\Util\OpenGL\Camera.h" />
     <ClInclude Include="src\Util\OpenGL\EBO.h" />
@@ -574,6 +578,8 @@
     <None Include="Dependencies\Include\glm\gtx\vector_angle.inl" />
     <None Include="Dependencies\Include\glm\gtx\vector_query.inl" />
     <None Include="Dependencies\Include\glm\gtx\wrap.inl" />
+    <None Include="Src\Shader\UI.frag" />
+    <None Include="Src\Shader\UI.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

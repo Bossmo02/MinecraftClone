@@ -10,12 +10,10 @@
 #include <iostream>
 
 #include <STB/stb_image.h>
-#include "Util/OpenGL/Texture.h"
-
-#include "Util/OpenGL/Camera.h"
 
 #include "World/World.h"
-
+#include "Util/UI/UI.h"
+#include "Player/Player.h"
 
 
 #include "Util/Timer.h"
@@ -42,12 +40,10 @@ void handleInput(GLFWwindow* window);
 void resizeCallback(GLFWwindow* wnd, int width, int height);
 void mouseMovementCallback(GLFWwindow* wnd, double xPos, double yPos);
 
-Camera cam;
 
 World* world;
-
-float sprintSpeedMulti = 20.f;
-float currentSpeedMulti = 1.f;
+UI* ui;
+Player* player;
 
 
 void toggleMouse(GLFWwindow* wnd)
@@ -64,118 +60,27 @@ void toggleMouse(GLFWwindow* wnd)
 	}
 }
 
-void getQuadVertices(std::vector<GLfloat>* vector, float x, float y, float z)
-{
-	GLfloat cubeVerticies[] =
-	{
-		//-----------pos----------,----texCoord------
-		-0.5f + x, -0.5f + y, -0.5f + z,		0.0f, 0.0f,
-		 0.5f + x, -0.5f + y, -0.5f + z,		10.0f, 0.0f,
-		-0.5f + x,  0.5f + y, -0.5f + z,		0.0f, 10.0f,
-		 0.5f + x,  0.5f + y, -0.5f + z,		10.0f, 10.0f
-	};
 
-	for (auto& x : cubeVerticies)
-		vector->push_back(x);
+
+void setupUi(UI* ui)
+{
+	float size = 0.12f;
+	float yPos = -0.85f;
+
+	// Crosshair
+	ui->addUIElement("crosshair", glm::vec2(0, 0), glm::vec2(0.03, 0.03), glm::vec2(4, 0));
+
+	// Grass Icon
+	ui->addUIElement("grass", glm::vec2(-(size * 1.5), yPos), glm::vec2(size, size), glm::vec2(0, 0));
+	ui->setHighlight("grass");
+	// Dirt Icon
+	ui->addUIElement("dirt", glm::vec2(-(size * 0.5), yPos), glm::vec2(size, size), glm::vec2(1, 0));
+	// Stone Icon
+	ui->addUIElement("stone", glm::vec2( (size * 0.5), yPos), glm::vec2(size, size), glm::vec2(2, 0));
+	// Sand Icon
+	ui->addUIElement("sand", glm::vec2( (size * 1.5), yPos), glm::vec2(size, size), glm::vec2(3, 0));
 }
 
-void getCubeVerticiesAt(std::vector<GLfloat>* vector, float x, float y, float z)
-{
-	GLfloat cubeVerticies[] =
-	{
-		//-----------pos----------,----texCoord------
-		-0.5f + x, -0.5f + y, -0.5f + z,		0.0f, 0.0f,
-		 0.5f + x, -0.5f + y, -0.5f + z,		1.0f, 0.0f,
-		-0.5f + x,  0.5f + y, -0.5f + z,		0.0f, 1.0f,
-		 0.5f + x,  0.5f + y, -0.5f + z,		1.0f, 1.0f,
-			  
-		-0.5f + x, -0.5f + y,  0.5f + z,		0.0f, 0.0f,
-		 0.5f + x, -0.5f + y,  0.5f + z,		1.0f, 0.0f,
-		-0.5f + x,  0.5f + y,  0.5f + z,		0.0f, 1.0f,
-		 0.5f + x,  0.5f + y,  0.5f + z,		1.0f, 1.0f,
-
-		-0.5f + x,  0.5f + y,  0.5f + z,		1.0f, 0.0f,
-		-0.5f + x,  0.5f + y, -0.5f + z,		1.0f, 1.0f,
-		-0.5f + x, -0.5f + y, -0.5f + z,		0.0f, 1.0f,
-		-0.5f + x, -0.5f + y,  0.5f + z,		0.0f, 0.0f,
-			  
-		 0.5f + x,  0.5f + y,  0.5f + z,		1.0f, 0.0f,
-		 0.5f + x,  0.5f + y, -0.5f + z,		1.0f, 1.0f,
-		 0.5f + x, -0.5f + y, -0.5f + z,		0.0f, 1.0f,
-		 0.5f + x, -0.5f + y,  0.5f + z,		0.0f, 0.0f,
-			 
-		-0.5f + x, -0.5f + y, -0.5f + z,		0.0f, 1.0f,
-		 0.5f + x, -0.5f + y, -0.5f + z,		1.0f, 1.0f,
-		 0.5f + x, -0.5f + y,  0.5f + z,		1.0f, 0.0f,
-		-0.5f + x, -0.5f + y,  0.5f + z,		0.0f, 0.0f,
-			  
-		 0.5f + x,  0.5f + y, -0.5f + z,		1.0f, 1.0f,
-		 0.5f + x,  0.5f + y,  0.5f + z,		1.0f, 0.0f,
-		-0.5f + x,  0.5f + y,  0.5f + z,		0.0f, 0.0f,
-		-0.5f + x,  0.5f + y, -0.5f + z,		0.0f, 1.0f
-
-	};
-
-	for(auto& x : cubeVerticies)
-		vector->push_back(x);
-}
-
-void getQuadIndices(std::vector<GLuint>* vector, int index)
-{
-	GLuint offset = index * 6;
-
-	GLuint cubeIndices[] =
-	{
-		//Back
-		0 + offset, 1 + offset, 3 + offset,
-		0 + offset, 2 + offset, 3 + offset
-	};
-
-	for (auto& x : cubeIndices)
-		vector->push_back(x);
-}
-
-void getCubeIndicesAt(std::vector<GLuint>* vector, int index)
-{
-	GLuint offset = index * 24;
-
-	GLuint cubeIndices[] =
-	{
-		//Back
-		0 + offset, 1 + offset, 3 + offset,
-		0 + offset, 2 + offset, 3 + offset,
-
-		//Front
-		4 + offset, 5 + offset, 7 + offset,
-		4 + offset, 6 + offset, 7 + offset,
-
-		// Left
-		11 + offset, 8 + offset,  9 + offset,
-		11 + offset, 10 + offset, 9 + offset,
-
-		//Right
-		15 + offset, 12 + offset, 13 + offset,
-		15 + offset, 14 + offset, 13 + offset,
-
-		// Down
-		19 + offset, 16 + offset, 17 + offset,
-		19 + offset, 18 + offset, 17 + offset,
-
-		// Up
-		22 + offset, 21 + offset, 20 + offset,
-		22 + offset, 23 + offset, 20 + offset
-	};
-	
-	for (auto& x : cubeIndices)
-		vector->push_back(x);
-}
-
-
-struct Vertex
-{
-	float pos[3];
-	float texCoords[2];
-};
 
 
 
@@ -214,68 +119,41 @@ int main()
 	}
 	glViewport(0, 0, width, height);
 
-	//-----------------------------------------------------------------------------
-	//Creating Buffers
+	glm::vec3 playerSpwanPos = glm::vec3(0, 0, 0);
 
+	player = new Player(playerSpwanPos);
+	world = new World(2);
+	ui = new UI("Res/sprites.png", GL_TEXTURE1, glm::vec2(128, 128), glm::vec2(640, 128));
+	setupUi(ui);
 	
-	world = new World(2, &cam);
-
-
-	//VAO firstVao;
-	//firstVao.bindVAO();
-
-
-	//std::vector<GLuint> eboData;
-	//std::vector<GLfloat> vboData;
-	//std::vector<GLfloat> vboTexData;
-
-
-	//// load vbo
-	//for (size_t i = 0; i < blockData.size(); ++i)
-	//{
-	//	for (size_t j = 0; j < blockData[i].vertices.size(); ++j)
-	//	{
-	//		vboData.push_back(blockData[i].vertices[j]);
-	//	}
-	//	
-	//	for (size_t j = 0; j < blockData[i].texCoords.size(); ++j)
-	//	{
-	//		vboTexData.push_back(blockData[i].texCoords[j]);
-	//	}
-	//}
-
-	//// load ebo
-	//for (size_t i = 0; i < blockData.size(); ++i)
-	//{
-	//	for (size_t j = 0; j < blockData[i].indices.size(); ++j)
-	//	{
-	//		eboData.push_back(blockData[i].indices[j]);
-	//	}
-	//}
-
-
-	//VBO vbo(vboData.data(), sizeof(GLfloat) * vboData.size(), GL_STATIC_DRAW);
-	//VBO vboTex(vboTexData.data(), sizeof(GLfloat) * vboTexData.size(), GL_STATIC_DRAW);
-	//EBO ebo(eboData.data(), sizeof(GLuint) * eboData.size(), GL_STATIC_DRAW);
-
-
-	//firstVao.linkVBO(vbo, 0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
-	//firstVao.linkVBO(vboTex, 1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (void*)0);
-
-
-	Texture tex1(GL_TEXTURE_2D, GL_TEXTURE0, "Res/spritesheet_tiles.png");
 
 	// projection from camera
 	glm::mat4 projection = glm::mat4(1.0f);
-	projection = glm::perspective(glm::radians(fov), (float)(width / height), 0.1f, 1000.0f);
+	projection = glm::perspective(glm::radians(fov), (float)(width / height), 0.1f, 800.0f);
 
-	glm::mat4 model = glm::mat4(1.0f);
+	//glm::mat4 model = glm::mat4(1.0f);
+
+
 
 
 	glEnable(GL_DEPTH_TEST);
-
+	glEnable(GL_DEPTH_CLAMP);
 
 	float passedTime = 0;
+
+	// initial chunk loading
+	std::cout << "Building World";
+	do
+	{
+		world->update(player->getPlayerPos());
+		std::this_thread::sleep_for((std::chrono::milliseconds)100);
+		std::cout << ".";
+	} while (world->isLoadingChunks());
+
+	std::cout << "Done\n";
+
+	player->setPlayerPos(glm::vec3(player->getPlayerPos().x, world->getHeightestPointAt(player->getPlayerPos()) + 20, player->getPlayerPos().z));
+	player->enablePlayerMovement(true);
 
 	//---------------------------------------------------------------------------
 	//Loop
@@ -295,38 +173,23 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
 
-		/*if (passedTime > 5.f)
-		{
-			passedTime = 0;
-			world = World(glfwGetTime());
-		}*/
-		world->update(cam.getCamPos());
+		world->update(player->getPlayerPos());
+		player->update(deltaTime, world->getBlockPositionsAroundPlayerPos(player->getPlayerPos()));
 
-		glm::mat4 mvp = projection * cam.getViewMatrix() * model;
+		glm::mat4 mvp = projection * player->getPlayerViewMatrix();// *model;
 
 		world->render(mvp, passedTime);
-
-
-		//// create transformations
-		//glm::mat4 transform2 = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
-		//transform2 = glm::translate(transform2, glm::vec3(-0.5f, 0.5f, 0.0f));
-		//transform2 = glm::scale(transform2, glm::vec3(sin(glfwGetTime()), sin(glfwGetTime()), sin(glfwGetTime())));
-
-		//glUniformMatrix4fv(glGetUniformLocation(shader.m_shaderId, "transform"), 1, GL_FALSE, glm::value_ptr(transform2));
-
-		//glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(unsigned int), GL_UNSIGNED_INT, (void*)0);
+		ui->render();
 
 
 		glfwSwapBuffers(pWindow);
 		glfwPollEvents();
+
 	}
 
-	/*firstVao.deleteVAO();
-	vbo.deleteVBO();
-	ebo.deleteEBO();*/
 
-	tex1.deleteTexture();
 	delete world;
+	delete ui;
 
 	glfwTerminate();
 
@@ -337,41 +200,77 @@ int main()
 // main end
 
 
+
+
 void handleInput(GLFWwindow* window)
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
+	
+
+	// player movement
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		player->move(CAMERA_MOVEMENT_DIR::FORWARD, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		player->move(CAMERA_MOVEMENT_DIR::BACKWARD, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		player->move(CAMERA_MOVEMENT_DIR::LEFT, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+		player->move(CAMERA_MOVEMENT_DIR::RIGHT, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+		player->move(CAMERA_MOVEMENT_DIR::UP, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+		player->move(CAMERA_MOVEMENT_DIR::DOWN, deltaTime);
+
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+		player->setSprinting(true);
+	else
+		player->setSprinting(false);
+
+	// block breaking
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)
+		world->destroyBlock(player->getCamera());
+
+	// block selection
+	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+	{
+		ui->setHighlight("grass");
+	}
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+	{
+		ui->setHighlight("dirt");
+	}
+	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
+	{
+		ui->setHighlight("stone");
+	}
+	if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
+	{
+		ui->setHighlight("sand");
+	}
+
+	// debug controls
 	if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS)
 		toggleMouse(window);
 	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		cam.moveRelativeToCamFront(CAMERA_MOVEMENT_DIR::FORWARD, deltaTime * currentSpeedMulti);
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		cam.moveRelativeToCamFront(CAMERA_MOVEMENT_DIR::BACKWARD, deltaTime * currentSpeedMulti);
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		cam.moveRelativeToCamFront(CAMERA_MOVEMENT_DIR::LEFT, deltaTime * currentSpeedMulti);
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		cam.moveRelativeToCamFront(CAMERA_MOVEMENT_DIR::RIGHT, deltaTime * currentSpeedMulti);
-	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-		cam.moveRelativeToCamFront(CAMERA_MOVEMENT_DIR::UP, deltaTime * currentSpeedMulti);
-	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
-		cam.moveRelativeToCamFront(CAMERA_MOVEMENT_DIR::DOWN, deltaTime * currentSpeedMulti);
-
-	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-		currentSpeedMulti = sprintSpeedMulti;
-	else
-		currentSpeedMulti = 1.f;
-
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)
-		world->destroyBlock();
 	if (glfwGetKey(window, GLFW_KEY_F1) == GLFW_PRESS)
 		world->resetHighlighting();
 	if (glfwGetKey(window, GLFW_KEY_F2) == GLFW_PRESS)
 		world->reloadAllChunks();
+	
+	if (glfwGetKey(window, GLFW_KEY_F7) == GLFW_PRESS)
+		player->setPlayerMovementType(true);
+	if (glfwGetKey(window, GLFW_KEY_F8) == GLFW_PRESS)
+		player->setPlayerMovementType(false);
+	if (glfwGetKey(window, GLFW_KEY_F9) == GLFW_PRESS)
+		player->printPlayerPosition(true);
+	if (glfwGetKey(window, GLFW_KEY_F10) == GLFW_PRESS)
+		player->printPlayerPosition(false);
+	if (glfwGetKey(window, GLFW_KEY_F11) == GLFW_PRESS)
+		player->printPlayerChunkLocalPosition();
 }
 
 
@@ -382,5 +281,5 @@ void resizeCallback(GLFWwindow* wnd, int width, int height)
 
 void mouseMovementCallback(GLFWwindow* wnd, double xPos, double yPos)
 {
-	cam.mouseMovement(xPos, yPos);
+	player->handleMouseInput(xPos, yPos);
 }

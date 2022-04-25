@@ -13,7 +13,7 @@ int ChunkPiece::searchForBlock(int y) const
     // returns the index of the block at given height
     for (int i = 0; i < blocks.size(); ++i)
     {
-        if (blocks[i].get()->getWorldPos().y == y)
+        if (blocks[i].get()->getLocalPos().y == y)
             return i;
     }
 

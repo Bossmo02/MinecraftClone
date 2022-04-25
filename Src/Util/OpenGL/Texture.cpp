@@ -1,23 +1,24 @@
 #include "Texture.h"
 
-Texture::Texture(GLenum textureType, GLenum slot, const char* texPath)
+Texture::Texture(GLenum textureType, GLenum textureSlot, const char* texPath, bool flip, GLint filter)
 {
 	m_type = textureType;
+	slot = textureSlot;
 
 	glGenTextures(1, &ID);
-	glActiveTexture(slot);
+	glActiveTexture(textureSlot);
 	glBindTexture(m_type, ID);
 	
 
 	// set the texture wrapping/filtering options (on the currently bound texture object)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
 
 	// load and generate the texture
 	int texWidth, texHeight, texChannels;
-	stbi_set_flip_vertically_on_load(true);
+	stbi_set_flip_vertically_on_load(flip);
 	unsigned char* data = stbi_load(texPath, &texWidth, &texHeight, &texChannels, 4);
 
 	if (data)

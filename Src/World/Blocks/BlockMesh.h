@@ -35,23 +35,4 @@ BlockMeshData getBlockTopMeshData(int indicesIndex);
 std::deque<BlockMeshData> getAllBlockData(int indicesIndex);
 
 
-struct BlockMeshDataForSingleVBO
-{
-	// values from 0 to 31 are expected
-	std::deque<int> vertices;
-	// x-values from 0 to 8 and y-values from 0 to 8 are expected
-	std::deque<int> texCoords;
-	std::deque<GLuint> indices;
-
-	// lightLevels from 0 to 31 are valid
-	int lightLevel;
-};
-
-BlockMeshDataForSingleVBO getBlockBackMeshDataForSingleVBO(int indicesIndex);
-BlockMeshDataForSingleVBO getBlockFrontMeshDataForSingleVBO(int indicesIndex);
-BlockMeshDataForSingleVBO getBlockLeftMeshDataForSingleVBO(int indicesIndex);
-BlockMeshDataForSingleVBO getBlockRightMeshDataForSingleVBO(int indicesIndex);
-BlockMeshDataForSingleVBO getBlockBottomMeshDataForSingleVBO(int indicesIndex);
-BlockMeshDataForSingleVBO getBlockTopMeshDataForSingleVBO(int indicesIndex);
-
 #endif // !BLOCK_MESH_HPP

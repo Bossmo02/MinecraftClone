@@ -27,7 +27,7 @@ class Chunk
 {
 public:
 
-    Chunk(int x, int z, int* worldSeed, int(*heightFunction)(int x, int z, int seed));
+    Chunk(int x, int z, int worldSeed, int(*heightFunction)(int x, int z, int seed));
     ~Chunk();
 
     void renderChunk(glm::mat4& mvp, float totalTime);
@@ -75,7 +75,7 @@ private:
     std::deque<std::unique_ptr<WaterBlock>> m_waterBlocks;
 
     glm::ivec2 m_chunkPos;
-    int* m_worldSeed;
+    int m_worldSeed;
 
 
     // DEBUG

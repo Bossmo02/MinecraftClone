@@ -57,6 +57,12 @@
     <ClCompile Include="Src\Renderer\WaterRenderer.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="Src\Util\UI\UI.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Player\Player.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dependencies\Include\STB\stb_image.h">
@@ -857,6 +863,12 @@
     <ClInclude Include="Src\Renderer\WaterRenderer.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Util\UI\UI.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Player\Player.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Dependencies\Include\glm\detail\func_common.inl">
@@ -1259,5 +1271,7 @@
     <None Include="src\shader\Default.vert" />
     <None Include="Src\Shader\DefaultWater.vert" />
     <None Include="Src\Shader\DefaultWater.frag" />
+    <None Include="Src\Shader\UI.vert" />
+    <None Include="Src\Shader\UI.frag" />
   </ItemGroup>
 </Project>

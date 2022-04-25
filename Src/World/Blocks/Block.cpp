@@ -60,7 +60,7 @@ int Block::getNumOfFacesVisible() const
 	return amount;
 }
 
-const glm::vec3 Block::getWorldPos() const
+const glm::vec3 Block::getLocalPos() const
 {
 	return glm::vec3(m_posInChunk.x, m_yPos, m_posInChunk.y);
 }
